@@ -1,0 +1,22 @@
+{
+  "name": "kanban",
+  "description": "A file-based task board Claude runs for you. Propose the next work, add clear cards, dive deeper, finish or reject — the backlog lives as plain Markdown in docs/kanban/, in git and diffable.",
+  "version": "0.1.0",
+  "author": {
+    "name": "neverchanje"
+  },
+  "homepage": "https://github.com/dist0com/kanban",
+  "repository": "https://github.com/dist0com/kanban",
+  "license": "Apache-2.0",
+  "keywords": [
+    "kanban",
+    "task-board",
+    "backlog",
+    "planning",
+    "project-management",
+    "productivity"
+  ],
+  "skills": [
+    "./skill"
+  ]
+}

@@ -1,0 +1,303 @@
+---
+name: kanban
+description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "dive deeper".
+---
+
+The task board lives in `docs/kanban/`. Read it before suggesting or adding work.
+
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  CONFIGURATION — fill this in for your project during install.
+  Anything left as a {{PLACEHOLDER}} falls back to the sensible default noted
+  next to it. See the repo README for the one-shot install prompt that fills
+  these in by reading your codebase and asking you a few questions.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+
+## Configuration
+
+This skill adapts to your project through the values below. The install step fills
+them in; until then, the defaults apply.
+
+- **Project** — {{PROJECT_NAME}}: {{PROJECT_GOAL}}
+  _(default: this repository; its goal is whatever the README states.)_
+- **Tracks** — the buckets a task can live in, with a rough share of effort:
+  {{TRACKS}}
+  _(default: `feature` 60%, `bug` 25%, `research` 15%. A track is just a folder
+  under `docs/kanban/todo/`.)_
+- **Planning sources** — what to read when proposing new work:
+  {{PLANNING_SOURCES}}
+  _(default: the codebase, `docs/`, and the board itself.)_
+- **Reference docs** — optional files the skill reads when they exist. Leave blank
+  if you don't have them:
+  - roadmap / direction: {{ROADMAP_DOC}}
+  - user-facing docs the work should keep in sync: {{DOCS_DIR}}
+  - anything else worth scanning each loop: {{EXTRA_SOURCES}}
+- **Preset** — an optional bundle of extra tracks and reviews for a specific kind of
+  project: {{PRESET}}
+  _(default: none. `references/presets/indie-hacker.md` adds growth / validation /
+  building tracks, market-validation, and a moat test for a solo product launch.)_
+
+Where this doc says "your tracks", "your planning sources", or "your reference docs",
+it means the values above.
+
+## Writing style
+
+Write every card in simple, clear, short language. No jargon, no business-speak, no
+clever phrasing. A non-native reader skimming should get it in one pass.
+
+- Bad: "Price it as a monthly retainer for an outcome stream."
+- Good: "Charge $300/month. The user gets a brief each week and a report each month."
+
+Say what to do and why it matters, in plain words. Cut any sentence you'd be
+embarrassed to read out loud.
+
+## Layout
+
+- `docs/kanban/todo/` — open tasks.
+  - `README.md` — the index. Read it first.
+  - `blockers/` — hard blockers. These gate the next milestone. Clear them first.
+  - one folder per track (see your tracks in Configuration), one card per file.
+  - `recurring/` — jobs we repeat on a cadence (see "Recurring task"). Its own folder
+    parallel to the track folders; one card per file, and they never archive.
+- `docs/kanban/archive.md` — shipped work, grouped by product area (topics), in plain
+  language. No task ids. Read before proposing so you don't re-suggest shipped work.
+- `docs/kanban/rejected.md` — ideas we turned down, grouped by product area (topics).
+  One line each: the idea, and why we said no. No task ids. Read before proposing so you
+  don't re-suggest them. Rejecting is rare; focus this file on what to avoid.
+- `docs/kanban/redesign.md` — design mistakes to avoid when writing a card, grouped by
+  product area (topics). One entry each: the mistake, then the design we actually want.
+  Read before writing or reviewing a card so a new card doesn't repeat a wrong plan.
+- `docs/kanban/memory.md` (or `docs/kanban/memory/*.md`) — short notes from past scans,
+  written from the user's standpoint, so a new loop builds on them.
+- `docs/kanban/next-id` — one number: the next free task id. **Never edit by hand** —
+  only the script writes it (see "The script").
+- `docs/kanban/metrics.csv` — one row per day: completed, created, rejected. The script
+  keeps it; you never touch it.
+
+## The script
+
+`.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to create, archive, or
+reject a task. It allocates ids, removes task files, strips the README entry, and records
+the daily metric. Run it from the repo root with `node`:
+
+```
+node .claude/skills/kanban/kanban.mjs create [--count N]   # allocate N ids (default 1), prints them
+node .claude/skills/kanban/kanban.mjs archive <id>         # finish task <id>
+node .claude/skills/kanban/kanban.mjs reject  <id>         # reject task <id>
+node .claude/skills/kanban/kanban.mjs run     <id>         # record one run of recurring task <id> (card kept)
+node .claude/skills/kanban/kanban.mjs peek                 # current next-id, no bump
+node .claude/skills/kanban/kanban.mjs help                 # full usage
+```
+
+Run `help` if unsure — a mistyped command also prints usage and suggests the nearest one.
+
+Never edit `docs/kanban/next-id` or `metrics.csv` by hand — let the script write them.
+
+## Task id
+
+Every task's id is the number at the front of its filename (`04-plan-cap-enforcement.md` → id 4). Ids are global and never reused.
+
+To get a new id, run `node .claude/skills/kanban/kanban.mjs create` — it prints the id and
+advances `next-id`. For a group task, `create --count N` returns N consecutive ids at once.
+
+## Propose the next things to do
+
+Generate **3 new tasks** — don't pick from the board. Find work nobody has planned
+yet, read from the user's standpoint: what do users still miss to reach what
+{{PROJECT_NAME}} promises? What trips them up? What keeps the process from being
+streamlined?
+
+Learn from your planning sources. You don't have to read them all in one pass — **loop**,
+a few each time. A source is worth reviewing when it has **changed since you last
+reviewed it** (check `git log` against the watermark in `memory.md`), or when you've
+never reviewed it. Typical sources:
+
+- the codebase — features that are half-built or rough.
+- your roadmap doc (Configuration) — promised direction not yet shipped.
+- your user-facing docs (Configuration) — what you tell users to do; gaps vs. what
+  the product actually does.
+- `docs/kanban/archive.md` — what's already done;
+- `docs/kanban/todo/` — what's undone; Don't repeat it.
+- `docs/kanban/rejected.md` — ideas already turned down; Don't re-propose them.
+- `docs/kanban/memory.md` — what we learned from past loops.
+
+Steps:
+
+1. Pick a few sources that changed since you last reviewed them (or are unreviewed).
+   Record user-standpoint gaps and the new watermark in `memory.md` (below).
+2. From those gaps, propose 3 tasks that are **not** on the board or in `archive.md`.
+3. Never duplicate. If unsure a task is already done, confirm (see `references/add-task.md`, step 2).
+
+### Memory
+
+Keep what you learn in `docs/kanban/memory.md` so the next loop builds on it instead
+of re-reading everything.
+
+- Write from the user's standpoint: the objective, what blocks them, where the
+  process snags.
+- Highly summarized — Delete details. Only maintain the high-level gap between the goal and what's supported.
+- Record a **review watermark** per source — the date you reviewed it at — so the next loop knows what changed and what to skip.
+- Update it as you learn; prune stale notes.
+- Auto-split / merge by length: keep one `memory.md` while it's short. When it grows
+  long, split into `memory/<topic>.md` files. When the pieces shrink, merge back.
+
+## Add a task
+
+Review before writing, then again after. Both passes use `references/task-review.md`;
+on a fail, ask the user a question about what it flagged, then decide from the answer
+whether to proceed or drop it. Never drop a task without asking a question first.
+
+1. **Review the idea first.** Before writing anything, review the task idea against
+   `references/task-review.md` — business necessity, feasibility, feature value,
+   duplication. Read `docs/kanban/redesign.md` and drop or fix any design it warns
+   against. Only proceed if it passes (or the user's answer says to).
+2. **Write the card.** Get the id from `node .claude/skills/kanban/kanban.mjs create`, then
+   spawn a subagent and give it `references/add-task.md` plus the allocated id. It writes
+   the whole card on its own — that file is the self-contained spec (steps, card shape,
+   todos, near-duplicate check, relationships) — and adds the README entry. Adding three
+   tasks? Allocate three ids up front (or `create --count 3`) and spawn three subagents in
+   parallel.
+3. **Review the written card.** Re-check it against `references/task-review.md` — plain
+   language, todos split, unambiguous plan. Keep it if it passes.
+
+## Review a task
+
+Follow `references/task-review.md`. Reviewing multiple? Spawn one
+subagent per card in parallel.
+
+## Dive deeper
+
+Take one task and move it one step forward — from vague to concrete. Judge where the
+card stands, push it to the next stage only (not three), stop at the code level, and
+write the result back into the card. Full guide in `references/dive-deeper.md`.
+
+## Group task
+
+Most tasks are one file. A **group task** is a broad task whose split yields subtasks
+that *themselves* need splitting — a dividable of a dividable. It lives in its own
+folder, not a single card:
+
+```
+todo/<id>-<short-slug>/
+  root.md                            # the tracking task
+  <track>/<subid>-<slug>.md          # a subtask, its own card, under any track folder
+```
+
+The root takes one new id; each subtask takes its own id — allocate them together with
+`node .claude/skills/kanban/kanban.mjs create --count <N>` (root + subtasks). Wire them up
+under "Relationships": each subtask is **Related** to the root, and **Blocked by** between
+subtasks that must run in order. Full spec in `references/add-task.md`.
+
+## Finish a task
+
+This is for one-shot tasks. A card under `todo/recurring/` is never finished this way —
+each run uses `run <id>` and keeps the card (see "Recurring task").
+
+Don't keep the full card — it just wastes tokens on future scans. Rewrite it down
+to a 1-2 line note and add it to `docs/kanban/archive.md` under the topic that fits
+— start a new topic heading if none fits. Say **what the user can now do**, in plain
+words. No task ids, file names, migrations, function names, or other code detail:
+
+```
+## <topic>
+- <what the user can now do, 1-2 plain lines>
+```
+
+Then run `node .claude/skills/kanban/kanban.mjs archive <id>` — it removes the card file
+(or the whole folder for a group root), strips its README entry, and records the completion.
+
+## Reject an idea
+
+Rejecting is rare. When you (or the user) turn down an idea, add a short line to
+`docs/kanban/rejected.md` under the topic that fits — start a new topic heading if none
+fits. One bolded idea name, then one plain line on why we said no:
+
+```
+## <topic>
+- **<idea name>** — <why we said no, one line>.
+```
+
+If the idea already had a card, run `node .claude/skills/kanban/kanban.mjs reject <id>` —
+it removes the card file (or folder), strips its README entry, and records the rejection.
+
+## Record a redesign
+
+When the user corrects a card that missed a requirement or got the design wrong, add a
+short entry to `docs/kanban/redesign.md` under the topic that fits — start a new topic
+heading if none fits. One bolded name for the mistake, then one plain line on the design we
+actually want. This is a guide for the next card, not a record of the fix — say what to do
+right, not what went wrong:
+
+```
+## <topic>
+- ❌ **<mistake>** → ✅ <what the design should be instead, one line>.
+```
+
+## The tracks
+
+Your tracks (Configuration) are the buckets a task lives in, each with a rough share of
+effort. Balance new work across them instead of pouring everything into one. The default
+tracks:
+
+- **feature (60%)** — build what moves the product forward. Stay at MVP; don't over-build.
+  Build when it scales work you'd otherwise do by hand, strengthens the product, or is
+  strongly demanded by users.
+- **bug (25%)** — fix what's broken or rough. A blocker bug goes in `blockers/`.
+- **research (15%)** — learn before you build: spikes, benchmarks, checking that a
+  direction is worth the effort before committing deep.
+
+Swap these for your project's real tracks during install. For a solo product launch, the
+`indie-hacker` preset (`references/presets/indie-hacker.md`) replaces them with
+growth / validation / building.
+
+## Recurring task
+
+A **recurring task** is a job we repeat on a cadence (e.g. a weekly report), not a one-shot
+we finish and archive. Recurring cards live in `todo/recurring/`, its own folder parallel to
+`blockers/` and the track folders, and mark their header `**Track:** recurring`.
+
+A recurring card carries two extra sections:
+
+- `## Process` — the distilled, in-order steps of one run. Tag each step by how it runs
+  today: `[script]` a command to run, `[agent]` an instruction the agent follows, `[ask]`
+  a step that still needs the user. The point of the type is to move steps up the ladder
+  over time (`[ask]` → `[agent]` → `[script]`) until a run needs no human.
+- `## Runs` — points to the per-run open-questions files (below).
+
+**Finishing a run** (not the whole task):
+
+1. Run the job by following `## Process`.
+2. Record it: `node .claude/skills/kanban/kanban.mjs run <id>` — this adds +1 to
+   `completed` and **keeps the card** (no archive, no README change). It refuses if the
+   card isn't under `todo/recurring/`.
+3. **Self-improve.** Collect what happened this run and rewrite `## Process` so the next
+   run needs less human effort: turn a manual step into an `[agent]` instruction, or an
+   `[agent]` step into a `[script]` step with a real command. This is the whole point —
+   each run should be more automatic than the last.
+4. **Log what still needed a human.** For any step the agent couldn't do alone, ask the
+   user and save the answers in `runs/<YYYY-MM-DD>-open-questions.md` inside a folder next
+   to the card (`todo/recurring/<id>-<slug>/runs/`). Before the next run, fold answered
+   questions back into `## Process` and delete them; a run file that empties out means that
+   step is now automatic.
+
+Full guide in `references/recurring-task.md`.
+
+## Auto-pruning
+
+To compress `memory.md`, `archive.md`, `rejected.md` and `redesign.md` down to
+planning-useful summaries, follow `references/prune-memory.md`.
+
+## Document a change
+
+A card that ships something users can see carries todos to update the docs it touches, so
+the change isn't hidden. Follow `references/document-feature.md` — it maps a change to the
+surfaces in your reference docs (Configuration) that need updating. If you keep no such
+docs, this step is a no-op.
+
+## Refs
+
+- your roadmap doc (Configuration) — product direction.
+- your user-facing docs (Configuration) — what you promise and teach users.
+- `references/presets/` — optional bundles that add tracks and reviews for a specific
+  kind of project (e.g. `indie-hacker.md`).

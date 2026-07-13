@@ -1,0 +1,27 @@
+{
+  "name": "kanban",
+  "owner": {
+    "name": "neverchanje",
+    "url": "https://github.com/dist0com"
+  },
+  "metadata": {
+    "description": "The kanban skill — a file-based task board Claude runs for you.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "kanban",
+      "source": "./",
+      "description": "A file-based task board Claude runs for you: propose work, add clear cards, dive deeper, finish or reject. Backlog is plain Markdown in docs/kanban/.",
+      "category": "productivity",
+      "tags": [
+        "kanban",
+        "task-board",
+        "backlog",
+        "planning",
+        "project-management"
+      ],
+      "license": "Apache-2.0"
+    }
+  ]
+}

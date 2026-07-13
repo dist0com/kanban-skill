@@ -1,0 +1,34 @@
+Set up the kanban skill for this project.
+
+Do the following, in order. Ask me at most 3 short questions total, and only where you
+genuinely can't infer a value — otherwise pick sensible defaults and tell me what you chose.
+
+1. Get the skill into the project. If `.claude/skills/kanban/SKILL.md` does not already
+   exist, copy it in:
+
+       git clone https://github.com/dist0com/kanban /tmp/kanban-skill
+       mkdir -p .claude/skills
+       cp -R /tmp/kanban-skill/skill .claude/skills/kanban
+
+2. Read `.claude/skills/kanban/SKILL.md`, especially the Configuration block and its
+   {{PLACEHOLDERS}}.
+
+3. Analyze this repository to infer the config values: the project name and one-line goal
+   (from the README / package metadata), what natural tracks the work splits into
+   (e.g. feature / bug / research, or something that fits this project better), the best
+   planning sources to scan (code dirs, docs/, roadmap), and any reference docs worth
+   keeping in sync (user guides, changelog, roadmap).
+
+4. If this is a solo product you're launching, offer the indie-hacker preset
+   (`.claude/skills/kanban/references/presets/indie-hacker.md`) instead of the default
+   tracks.
+
+5. Edit `.claude/skills/kanban/SKILL.md` in place: replace every {{PLACEHOLDER}} with the
+   chosen value and delete the config helper comment.
+
+6. Scaffold the board under `docs/kanban/`: `todo/README.md` (the index), a
+   `todo/blockers/` folder and one folder per track, `next-id` containing `1`, and empty
+   `archive.md`, `rejected.md`, `redesign.md`, `memory.md`.
+
+7. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
+   then propose the first 3 tasks so I have something to start from.

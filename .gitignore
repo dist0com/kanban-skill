@@ -1,0 +1,2 @@
+# Dogfooding symlink -> skill/ (avoids syncing edits across two paths)
+.claude/skills/kanban
