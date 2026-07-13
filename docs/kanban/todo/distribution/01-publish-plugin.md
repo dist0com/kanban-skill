@@ -16,12 +16,21 @@ Anthropic's official plugin directory and skills.sh (Vercel's Agent Skills Direc
 
 ## Todo
 - [x] Run `claude plugin validate .` and fix anything it flags. — passes, including `--strict`.
-- [x] Test `/plugin marketplace add dist0com/kanban` then `/plugin install kanban@kanban` in a scratch project. — verified locally via the `claude plugin` CLI (add marketplace → install → skill loads → cleaned up).
-- [ ] Read the official directory's contribution rules and submit the repo. — rules read: submit via the form at https://clau.de/plugin-directory-submission; plugins pass a quality/security review. **Blocked:** repo is private; the form and review need a public repo, and submission is the owner's action.
-- [ ] Confirm skills.sh picks up the repo (search it, or run `npx skills add dist0com/kanban`). **Blocked:** skills.sh only auto-indexes *public* repos.
-- [x] Add the install commands and the live listing links (official directory + skills.sh) to the README. — plugin + `npx skills add` install commands added; live listing links deferred until the repo is public and listed.
+- [x] Test `/plugin marketplace add dist0com/kanban` then `/plugin install kanban@kanban` in a scratch project. — verified via the `claude plugin` CLI against the **public GitHub repo** (add marketplace → clone → validate → install → skill loads → cleaned up).
+- [ ] Read the official directory's contribution rules and submit the repo. — rules read: submit via the form at https://clau.de/plugin-directory-submission; plugins pass a quality/security review. **Owner action:** repo is now public; owner submits the form (text prepared in "## Submission text" below).
+- [ ] Confirm skills.sh picks up the repo (search it, or run `npx skills add dist0com/kanban`). Repo is public now, so it's eligible; skills.sh crawls on its own cadence — check the listing in a few days.
+- [x] Add the install commands and the live listing links (official directory + skills.sh) to the README. — plugin + `npx skills add` install commands added; live listing links deferred until the repo is listed.
 
-## Blocker
-The repo `dist0com/kanban` is **private**. Both directory submissions (official directory
-and skills.sh) require a public repo, and submitting to the official directory is an
-owner-account action. Make the repo public, then the two open todos can proceed.
+## Done so far
+Repo `dist0com/kanban` is **public**; code pushed to `main`; plugin validates (incl.
+`--strict`) and installs cleanly from GitHub. Two open todos remain: the owner submits the
+official-directory form, and we wait for skills.sh to index the repo.
+
+## Submission text
+For the official directory form (https://clau.de/plugin-directory-submission):
+- **Repo:** https://github.com/dist0com/kanban
+- **Plugin name (slug):** kanban
+- **Category:** productivity
+- **Description:** A file-based task board Claude runs for you: propose work, add clear
+  cards, dive deeper, finish or reject. Backlog is plain Markdown in docs/kanban/.
+- **License:** Apache-2.0
