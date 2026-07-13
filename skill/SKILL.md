@@ -77,11 +77,12 @@ embarrassed to read out loud.
 
 ## The script
 
-`.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to create, archive, or
-reject a task. It allocates ids, removes task files, strips the README entry, and records
-the daily metric. Run it from the repo root with `node`:
+`.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to scaffold the board or
+create, archive, or reject a task. It allocates ids, removes task files, strips the README
+entry, and records the daily metric. Run it from the repo root with `node`:
 
 ```
+node .claude/skills/kanban/kanban.mjs init [track...]      # scaffold docs/kanban/ (tracks default to feature bug research)
 node .claude/skills/kanban/kanban.mjs create [--count N]   # allocate N ids (default 1), prints them
 node .claude/skills/kanban/kanban.mjs archive <id>         # finish task <id>
 node .claude/skills/kanban/kanban.mjs reject  <id>         # reject task <id>

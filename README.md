@@ -1,21 +1,34 @@
-# kanban — a file-based task board Claude runs for you
+# Kanban skill — organize your task board in Markdown, right next to your code
 
-A Claude Code skill that lets Claude run your backlog for you — proposing the next work,
-writing the cards, and archiving what's done. Your backlog lives as plain Markdown files in `docs/kanban/`
-— in git, diffable, readable by both you and the agent. No database, no web app, no SaaS.
-
-Ask Claude *"what's next?"* and it reads the board, proposes work grounded in your
-codebase, and writes clear task cards. Say *"this is done"* and it archives the card and
-records the metric. The board stays small because finished work is compressed to a
-one-line note, not left to rot.
-
-- **Propose** — 3 new tasks pulled from real gaps in your code and docs, never busywork.
-- **Add** — self-contained cards in plain language, split into checkable todos.
-- **Dive deeper** — push one card from vague to concrete, one stage at a time.
-- **Finish / reject** — a single script allocates ids, removes cards, and keeps metrics.
+A skill that lets Claude Code does project management for you — proposing the
+next work, writing the cards, and archiving what's done. It's a **task board in Markdown**: your
+backlog lives as plain Markdown files in `docs/kanban/` — in git, diffable, readable by both
+you and the agent. Instead of tracking work in GitHub Issues or Linear, you steer the
+board in plain language, straight from your terminal — call it **vibe kanban** if you like. No
+database, no web app, no MCP.
 
 It adapts to your project through a small **Configuration** block — your name, your
 tracks, your docs. Everything else is generic.
+
+## Designed for solo founders
+
+This skill is best suited for solo founders and small teams who don't want their work
+scattered across Slack, GitHub, Notion, and a dozen other apps. Keep everything in one
+place — your codebase — and you cut the context switching, the information silos, and the
+tokens burned pulling state out of each app through MCP or screenshots.
+
+For indie hackers, that means marketing, building, documentation, social proof, social
+listening, and competitor tracking all living side by side in the same repo. When your
+context isn't fragmented across tools, the LLM can compose across everything you have — and
+that's where it does its best work.
+
+## Tested with Claude Code + Opus
+
+This skill is primarily developed and tested with **Claude Code** running an Opus-series
+model, so that's the combination it works best with today. It's plain Markdown and a
+dependency-free Node script under the hood, though, so nothing ties it to one agent. If you
+run it with a different model — or a different coding agent entirely — we'd love your
+feedback on how it holds up.
 
 ## Install
 
@@ -25,6 +38,26 @@ ids and edit metrics.
 
 Installing is one prompt — you don't copy files or edit config by hand. Your agent reads
 your codebase, fills in the setup, and scaffolds the board for you.
+
+### Install as a plugin (one command)
+
+The repo is its own plugin marketplace, so you can add and install it straight from Claude
+Code:
+
+```
+/plugin marketplace add dist0com/kanban
+/plugin install kanban@kanban
+```
+
+Or, through the [Vercel Agent Skills directory](https://skills.sh):
+
+```
+npx skills add dist0com/kanban
+```
+
+That makes the skill available to Claude. Then, in each project you want a board, tell
+Claude **"set up the kanban skill for this project"** — it fills the **Configuration**
+block from your codebase and scaffolds `docs/kanban/` (same as the prompt below).
 
 ### Recommended: let your agent install it
 
@@ -65,6 +98,7 @@ Once installed, drive it in plain language — the skill triggers on these:
 Under the hood, only `kanban.mjs` allocates ids or touches metrics:
 
 ```bash
+node .claude/skills/kanban/kanban.mjs init [track...]     # scaffold a fresh board
 node .claude/skills/kanban/kanban.mjs create [--count N]  # allocate ids
 node .claude/skills/kanban/kanban.mjs archive <id>        # finish a task
 node .claude/skills/kanban/kanban.mjs reject  <id>        # drop an idea
@@ -74,24 +108,6 @@ node .claude/skills/kanban/kanban.mjs metrics             # the daily CSV
 ```
 
 See [the daily loop](docs/guides/daily-loop.md) for how to run the board day to day.
-
-## What's in this repo
-
-```
-skill/                     # the distributable skill (this is what you install)
-  SKILL.md                 #   how Claude runs the board (with {{PLACEHOLDERS}})
-  kanban.mjs               #   the id/metrics bookkeeping script
-  references/              #   deep-dive guides the skill loads on demand
-    presets/               #   optional bundles (e.g. indie-hacker)
-.claude/skills/kanban/     # this repo's own filled-in install (dogfooding)
-docs/kanban/               # this repo's own board — a live example
-docs/guides/               # usage guides
-INSTALL_PROMPT.txt         # the one-shot install prompt agents read to set it up
-.claude-plugin/            # plugin + marketplace manifests
-PUBLISHING.md              # how the skill gets onto marketplaces
-NOTICE                     # Apache attribution notice
-LICENSE                    # Apache License 2.0
-```
 
 This repo **uses the skill on itself**: `docs/kanban/` is a real board tracking the
 skill's own development, so you can see exactly what a filled-in setup looks like.

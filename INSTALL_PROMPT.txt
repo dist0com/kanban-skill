@@ -26,9 +26,13 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
 5. Edit `.claude/skills/kanban/SKILL.md` in place: replace every {{PLACEHOLDER}} with the
    chosen value and delete the config helper comment.
 
-6. Scaffold the board under `docs/kanban/`: `todo/README.md` (the index), a
-   `todo/blockers/` folder and one folder per track, `next-id` containing `1`, and empty
-   `archive.md`, `rejected.md`, `redesign.md`, `memory.md`.
+6. Scaffold the board with the script, passing the tracks you chose in step 3:
+
+       node .claude/skills/kanban/kanban.mjs init <track1> <track2> ...
+
+   This creates `docs/kanban/` with `todo/README.md`, a `todo/blockers/` folder and one
+   folder per track, `next-id` set to `1`, and empty `archive.md`, `rejected.md`,
+   `redesign.md`, `memory.md`. It's safe to re-run — it does nothing if a board exists.
 
 7. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
    then propose the first 3 tasks so I have something to start from.

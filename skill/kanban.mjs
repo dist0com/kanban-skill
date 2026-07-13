@@ -2,6 +2,7 @@
 // Kanban board bookkeeping. The ONLY sanctioned writer of docs/kanban/next-id.
 //
 // Handles the id-touching moves so the board stays consistent:
+//   init    — scaffold a fresh docs/kanban/ board (folders + starter files)
 //   create  — allocate task id(s), record them as "created" for today
 //   archive — remove a finished task's file/folder + its README entry, record "completed"
 //   reject  — same removal, record "rejected"
@@ -10,6 +11,7 @@
 // It also keeps docs/kanban/metrics.csv (one row per day: completed, created, rejected).
 //
 // Usage:
+//   node kanban.mjs init [track...]      scaffold docs/kanban/ (tracks default to feature bug research)
 //   node kanban.mjs create [--count N]   allocate N ids (default 1), print them, count as created
 //   node kanban.mjs archive <id>         finish task <id> (file/folder + README + metric)
 //   node kanban.mjs reject  <id>         reject task <id> (file/folder + README + metric)
@@ -95,6 +97,16 @@ function walkMd(dir, acc = []) {
   return acc
 }
 
+function walkDirs(dir, acc = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const full = path.join(dir, entry.name)
+    acc.push(full)
+    walkDirs(full, acc)
+  }
+  return acc
+}
+
 const idPrefix = (name) => {
   const m = name.match(/^(\d+)-/)
   return m ? Number(m[1]) : null
@@ -102,16 +114,15 @@ const idPrefix = (name) => {
 
 // Returns { kind: 'group'|'file', target, rel } or null.
 //   group  — an id-prefixed folder holding a root.md tracking card; target is the folder.
+//            found at any depth, so a recurring folder-task (its card plus sibling docs)
+//            resolves the same way a top-level group root does.
 //   file   — a single card (standalone or a group's subtask); target is the file.
 function locate(id) {
-  for (const entry of fs.readdirSync(TODO, { withFileTypes: true })) {
-    if (
-      entry.isDirectory() &&
-      idPrefix(entry.name) === id &&
-      fs.existsSync(path.join(TODO, entry.name, 'root.md'))
-    ) {
-      return { kind: 'group', target: path.join(TODO, entry.name), rel: entry.name }
-    }
+  const groupDir = walkDirs(TODO).find(
+    (d) => idPrefix(path.basename(d)) === id && fs.existsSync(path.join(d, 'root.md')),
+  )
+  if (groupDir) {
+    return { kind: 'group', target: groupDir, rel: path.relative(TODO, groupDir) }
   }
   const hit = walkMd(TODO).find((f) => idPrefix(path.basename(f)) === id)
   if (hit) return { kind: 'file', target: hit, rel: path.relative(TODO, hit) }
@@ -165,6 +176,73 @@ function stripReadmeRefs(target) {
   return removed
 }
 
+// ---- init ------------------------------------------------------------------
+
+// Default tracks when `init` is run with no track args. Swap by passing your own,
+// e.g. `init growth validation building`. Keep in step with the SKILL.md defaults.
+const DEFAULT_TRACKS = ['feature', 'bug', 'research']
+
+// Starter files. Each is a short header that tells the next reader what the file is for;
+// the board fills in the rest over time. Kept in plain language to match the skill's style.
+const STARTERS = {
+  'archive.md': `# Archive
+
+Shipped work, grouped by topic, in plain language. No task ids. Read before proposing so
+you don't re-suggest something already done.
+`,
+  'rejected.md': `# Rejected
+
+Ideas we turned down, grouped by topic. One line each: the idea, and why we said no. Read
+before proposing so you don't re-suggest them.
+`,
+  'redesign.md': `# Redesign
+
+Design mistakes to avoid when writing a card, grouped by topic. One entry each: the
+mistake, then the design we actually want. Read before writing or reviewing a card.
+`,
+  'memory.md': `# Memory
+
+Short notes carried to the next planning loop, from the user's standpoint. Watermarks say
+when a source was last reviewed, so the next loop knows what changed.
+`,
+}
+
+function boardReadme(tracks) {
+  const sections = ['## Blockers', '', '_(none)_', '']
+  for (const t of tracks) sections.push(`## ${t}`, '', '_(none)_', '')
+  return `# Board
+
+Open tasks for the kanban board. One card per file. Ids are global and never reused —
+the number at the front of a filename is the task id.
+
+Blockers gate the next milestone; clear them first. Everything else sits under a track.
+
+${sections.join('\n')}`
+}
+
+function cmdInit(args) {
+  const tracks = args.length ? args : DEFAULT_TRACKS
+  for (const t of tracks) {
+    if (!/^[a-z0-9][a-z0-9-]*$/i.test(t)) {
+      die(`bad track name "${t}" — use letters, digits, and dashes (a folder name)`)
+    }
+  }
+  if (fs.existsSync(KANBAN)) {
+    console.log(`board already exists at ${rel(KANBAN)}/ — nothing to do (safe to re-run)`)
+    return
+  }
+  fs.mkdirSync(path.join(TODO, 'blockers'), { recursive: true })
+  for (const t of tracks) fs.mkdirSync(path.join(TODO, t), { recursive: true })
+  fs.writeFileSync(README, boardReadme(tracks))
+  for (const [name, body] of Object.entries(STARTERS)) {
+    fs.writeFileSync(path.join(KANBAN, name), body)
+  }
+  writeNextId(1)
+  console.log(`initialised board at ${rel(KANBAN)}/`)
+  console.log(`  tracks: ${tracks.join(', ')}`)
+  console.log('  next: fill the Configuration in SKILL.md, then `create` your first task')
+}
+
 // ---- commands --------------------------------------------------------------
 
 function cmdCreate(args) {
@@ -214,6 +292,8 @@ function cmdRun(id) {
 function main() {
   const [cmd, ...rest] = process.argv.slice(2)
   switch (cmd) {
+    case 'init':
+      return cmdInit(rest)
     case 'create':
       return cmdCreate(rest)
     case 'archive':
@@ -241,12 +321,14 @@ function main() {
   }
 }
 
-const COMMANDS = ['create', 'archive', 'reject', 'run', 'peek', 'metrics', 'help']
+const COMMANDS = ['init', 'create', 'archive', 'reject', 'run', 'peek', 'metrics', 'help']
 
 const HELP = `kanban — the only sanctioned writer of docs/kanban/next-id.
 
 Usage: node ${rel(SELF)} <command> [args]
 
+  init [track...]      scaffold docs/kanban/ (folders + starter files); tracks default to
+                       feature bug research. Does nothing if a board already exists.
   create [--count N]   allocate N task ids (default 1), advance next-id, print them
   archive <id>         finish task <id>: remove its file/folder + README entry, count completed
   reject  <id>         reject task <id>: same removal, count rejected

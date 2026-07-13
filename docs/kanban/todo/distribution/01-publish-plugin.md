@@ -15,8 +15,13 @@ Anthropic's official plugin directory and skills.sh (Vercel's Agent Skills Direc
   `npx skills add dist0com/kanban`.
 
 ## Todo
-- [ ] Run `claude plugin validate .` and fix anything it flags.
-- [ ] Test `/plugin marketplace add dist0com/kanban` then `/plugin install kanban@kanban` in a scratch project.
-- [ ] Read the official directory's contribution rules and submit the repo.
-- [ ] Confirm skills.sh picks up the repo (search it, or run `npx skills add dist0com/kanban`); check the submission rules at https://skills.sh/docs if it doesn't auto-list.
-- [ ] Add the install commands and the live listing links (official directory + skills.sh) to the README.
+- [x] Run `claude plugin validate .` and fix anything it flags. — passes, including `--strict`.
+- [x] Test `/plugin marketplace add dist0com/kanban` then `/plugin install kanban@kanban` in a scratch project. — verified locally via the `claude plugin` CLI (add marketplace → install → skill loads → cleaned up).
+- [ ] Read the official directory's contribution rules and submit the repo. — rules read: submit via the form at https://clau.de/plugin-directory-submission; plugins pass a quality/security review. **Blocked:** repo is private; the form and review need a public repo, and submission is the owner's action.
+- [ ] Confirm skills.sh picks up the repo (search it, or run `npx skills add dist0com/kanban`). **Blocked:** skills.sh only auto-indexes *public* repos.
+- [x] Add the install commands and the live listing links (official directory + skills.sh) to the README. — plugin + `npx skills add` install commands added; live listing links deferred until the repo is public and listed.
+
+## Blocker
+The repo `dist0com/kanban` is **private**. Both directory submissions (official directory
+and skills.sh) require a public repo, and submitting to the official directory is an
+owner-account action. Make the repo public, then the two open todos can proceed.
