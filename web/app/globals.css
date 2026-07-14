@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Tailwind v4 theme — GitHub-flavored dark palette exposed as utilities/vars. */
+@theme {
+  --color-bg: #0d1117;
+  --color-elev: #161b22;
+  --color-border: #21262d;
+  --color-ink: #e6edf3;
+  --color-muted: #9198a1;
+  --color-accent: #58a6ff;
+  --color-code: #0a0e14;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
