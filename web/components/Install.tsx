@@ -1,10 +1,11 @@
 import { CodeBlock } from "./CodeBlock";
+import { SectionHeading } from "./SectionHeading";
 
 export function Install() {
   return (
-    <section id="install" className="mt-20 scroll-mt-20">
-      <h2 className="mb-3 text-3xl font-bold tracking-tight">Install in one prompt</h2>
-      <p className="text-muted">
+    <section id="install" className="mt-24 scroll-mt-20">
+      <SectionHeading num="01" eyebrow="Setup" title="Install in one prompt" />
+      <p className="text-ink">
         From your project root, tell Claude Code (or any agent that can run shell
         commands):
       </p>
@@ -19,10 +20,6 @@ and follow it.`}</CodeBlock>
         , reads your codebase to fill in the configuration, scaffolds the board, and
         proposes your first three tasks.
       </p>
-
-      <p className="mt-8 text-muted">Or add it from the plugin marketplace:</p>
-      <CodeBlock>{`/plugin marketplace add dist0com/kanban
-/plugin install kanban@kanban`}</CodeBlock>
     </section>
   );
 }

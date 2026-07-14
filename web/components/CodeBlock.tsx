@@ -30,14 +30,14 @@ export function CodeBlock({ children }: { children: string }) {
 
   return (
     <div className="group relative my-4">
-      <pre className="overflow-x-auto rounded-xl border border-border bg-code p-5 pr-14">
+      <pre className="overflow-x-auto rounded-lg border-2 border-border bg-code p-5 pr-14 shadow-[4px_4px_0_0_#010409]">
         <code className="font-mono text-sm leading-7 text-ink">{children}</code>
       </pre>
       <button
         type="button"
         onClick={copy}
         aria-label={copied ? "Copied" : "Copy to clipboard"}
-        className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-border bg-code px-2.5 py-1.5 text-xs font-medium text-muted opacity-0 transition-all duration-150 hover:border-ink/20 hover:text-ink focus-visible:opacity-100 focus-visible:outline-none active:scale-95 group-hover:opacity-100 cursor-pointer"
+        className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border-2 border-border bg-code px-2.5 py-1.5 text-xs font-medium text-muted opacity-0 transition-all duration-150 hover:border-accent/50 hover:text-ink focus-visible:opacity-100 focus-visible:outline-none active:scale-95 group-hover:opacity-100 cursor-pointer"
       >
         {copied ? (
           <>

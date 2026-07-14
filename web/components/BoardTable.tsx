@@ -1,32 +1,37 @@
 import { boardRows } from "./content";
+import { SectionHeading } from "./SectionHeading";
+import { panelStatic } from "./styles";
 
 export function BoardTable() {
   return (
-    <section id="board" className="mt-20 scroll-mt-20">
-      <h2 className="mb-3 text-3xl font-bold tracking-tight">Using the board</h2>
-      <p className="text-muted">Once installed, drive it in plain language:</p>
-      <table className="mt-4 w-full border-collapse text-[0.96rem]">
-        <thead>
-          <tr>
-            <th className="border-b border-border px-4 py-3 text-left text-[0.85rem] font-semibold uppercase tracking-wide text-muted">
-              You say
-            </th>
-            <th className="border-b border-border px-4 py-3 text-left text-[0.85rem] font-semibold uppercase tracking-wide text-muted">
-              Claude does
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+    <section id="board" className="mt-24 scroll-mt-20">
+      <SectionHeading num="02" eyebrow="Usage" title="Using the board" />
+      <p className="text-ink">Once installed, drive it in plain language:</p>
+
+      <div className={`${panelStatic} mt-5 overflow-hidden bg-code`}>
+        {/* terminal chrome */}
+        <div className="flex items-center gap-2 border-b-2 border-border px-4 py-2.5">
+          <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
+          <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
+          <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
+          <span className="ml-2 font-mono text-xs text-muted">you › claude</span>
+        </div>
+
+        <div className="divide-y divide-border font-mono text-sm">
           {boardRows.map((r) => (
-            <tr key={r.say}>
-              <td className="whitespace-nowrap border-b border-border px-4 py-3 font-mono text-sm text-accent">
-                {r.say}
-              </td>
-              <td className="border-b border-border px-4 py-3 text-ink">{r.does}</td>
-            </tr>
+            <div key={r.say} className="px-4 py-3.5">
+              <div className="flex items-baseline gap-2">
+                <span className="select-none text-accent">›</span>
+                <span className="font-semibold text-ink">{r.say}</span>
+              </div>
+              <div className="mt-1.5 flex items-baseline gap-2 pl-4 text-muted">
+                <span className="select-none text-accent/60">⤷</span>
+                <span>{r.does}</span>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </section>
   );
 }

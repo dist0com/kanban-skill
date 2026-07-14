@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { GITHUB_URL } from "./content";
+import { Quickview } from "./Quickview";
 
 export function Hero() {
   return (
@@ -25,32 +25,22 @@ export function Hero() {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a
             href="#install"
-            className="rounded-xl bg-accent px-6 py-3 font-semibold text-white no-underline transition-transform hover:-translate-y-0.5"
+            className="rounded-lg border-2 border-accent bg-accent px-6 py-3 font-semibold text-white no-underline shadow-[4px_4px_0_0_#1f6feb] transition-all duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#1f6feb]"
           >
             Install in one prompt
           </a>
           <a
             href={GITHUB_URL}
             rel="noopener"
-            className="rounded-xl border border-border px-6 py-3 font-semibold text-ink no-underline transition-colors hover:bg-elev"
+            className="rounded-lg border-2 border-border px-6 py-3 font-semibold text-ink no-underline shadow-[4px_4px_0_0_#010409] transition-all duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-[6px_6px_0_0_var(--color-accent)]"
           >
             View on GitHub
           </a>
         </div>
       </section>
 
-      <section className="mt-16 text-center">
-        <Image
-          src="/assets/quickview.jpg"
-          alt="The kanban task tree rendered in the terminal"
-          width={1600}
-          height={1000}
-          priority
-          className="mx-auto h-auto w-full max-w-2xl rounded-xl border border-border shadow-2xl"
-        />
-        <p className="mt-4 text-sm text-muted">
-          The board, rendered in your terminal — the same files that live in git.
-        </p>
+      <section className="mt-16">
+        <Quickview />
       </section>
     </>
   );

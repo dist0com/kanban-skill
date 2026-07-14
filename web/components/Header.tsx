@@ -13,6 +13,9 @@ export function Header() {
         <a href="#board" className="transition-colors hover:text-ink">
           Using it
         </a>
+        <a href="#deeper" className="transition-colors hover:text-ink">
+          Features
+        </a>
         <a
           href={GITHUB_URL}
           rel="noopener"

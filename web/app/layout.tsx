@@ -7,18 +7,28 @@ export const metadata: Metadata = {
   title: "Kanban skill — a task board in Markdown, next to your code",
   description:
     "A Claude Code skill that runs a file-based kanban board for you. Your backlog lives as plain Markdown in docs/kanban/ — in git, diffable, no database, no web app, no MCP.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
+    url: "/",
+    siteName: "Kanban skill",
     title: "Kanban skill — a task board in Markdown, next to your code",
     description:
       "Claude proposes the next work, writes the cards, and archives what's done. You steer the backlog in plain language, straight from your terminal.",
-    images: ["/assets/quickview.jpg"],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
+    title: "Kanban skill — a task board in Markdown, next to your code",
+    description:
+      "Claude proposes the next work, writes the cards, and archives what's done. You steer the backlog in plain language, straight from your terminal.",
   },
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>",
+  },
+  verification: {
+    google: "QVTStPZuK-LT8pPMpHaVrFmpfTGz1Q-zqmdKpkTK8d0",
   },
 };
 
