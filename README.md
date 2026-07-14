@@ -65,26 +65,6 @@ its contents into the agent instead — same result.
 
 That's the whole setup. From then on you just talk to the board.
 
-### Found it through the plugin marketplace?
-
-The repo is its own plugin marketplace, so you can add and install it from Claude Code:
-
-```
-/plugin marketplace add dist0com/kanban
-/plugin install kanban@kanban
-```
-
-You can also grab it from the [Vercel Agent Skills directory](https://skills.sh):
-
-```
-npx skills add dist0com/kanban
-```
-
-This gives you the skill, but not a working board yet — installing this way doesn't fill in
-your project's settings or create the board files. So after installing, run the setup prompt
-above once in each project: it copies the skill into your repo, fills in the settings from
-your code, and creates the `docs/kanban/` board.
-
 ### Requirements
 
 - Claude Code (or any agent that can read skills and run shell commands).

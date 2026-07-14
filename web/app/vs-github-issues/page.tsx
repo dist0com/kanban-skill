@@ -1,0 +1,60 @@
+import type { Metadata } from "next";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { VsHero } from "@/components/VsHero";
+import { VsSummary } from "@/components/VsSummary";
+import { VsComparison } from "@/components/VsComparison";
+import { VsWins } from "@/components/VsWins";
+import { VsErgonomics } from "@/components/VsErgonomics";
+import { VsDecision } from "@/components/VsDecision";
+
+export const metadata: Metadata = {
+  title: "Kanban skill vs. GitHub Issues — a different tool for a different job",
+  description:
+    "How the file-based kanban skill compares to GitHub Issues: local Markdown vs. a remote API, token cost, agent ergonomics, teams, and when to use each.",
+  alternates: { canonical: "/vs-github-issues/" },
+  openGraph: {
+    type: "article",
+    url: "/vs-github-issues/",
+    siteName: "Kanban skill",
+    title: "Kanban skill vs. GitHub Issues",
+    description:
+      "Not a replacement — a different tool for a different bottleneck. A head-to-head on speed, tokens, agents, and teams.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Kanban skill vs. GitHub Issues",
+    description:
+      "Not a replacement — a different tool for a different bottleneck. A head-to-head on speed, tokens, agents, and teams.",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Kanban skill vs. GitHub Issues",
+  description:
+    "How the file-based kanban skill compares to GitHub Issues across storage, token cost, agent ergonomics, teams, and transparency.",
+  url: "https://kanban-skill.pages.dev/vs-github-issues/",
+};
+
+export default function VsPage() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Header />
+      <main className="mx-auto max-w-4xl px-6 pb-8">
+        <VsHero />
+        <VsSummary />
+        <VsComparison />
+        <VsWins />
+        <VsErgonomics />
+        <VsDecision />
+      </main>
+      <Footer />
+    </>
+  );
+}

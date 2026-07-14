@@ -1,0 +1,35 @@
+import type { MetadataRoute } from "next";
+import fs from "node:fs";
+import path from "node:path";
+
+// Required for `output: export` — emit sitemap.xml at build time.
+export const dynamic = "force-static";
+
+const BASE_URL = "https://kanban-skill.pages.dev";
+
+// Discover every comparison route by scanning `app/` for `vs-*` directories
+// that hold a `page.tsx`. New comparison pages are picked up automatically at
+// build time — e.g. `app/vs-linear/page.tsx` → `/vs-linear/`.
+function vsRoutes(): string[] {
+  const appDir = path.join(process.cwd(), "app");
+  const routes: string[] = [];
+
+  for (const entry of fs.readdirSync(appDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith("vs-")) continue;
+    if (fs.existsSync(path.join(appDir, entry.name, "page.tsx"))) {
+      routes.push(`/${entry.name}/`);
+    }
+  }
+
+  return routes;
+}
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  const routes = ["/", ...vsRoutes()];
+
+  return routes.map((route) => ({
+    url: `${BASE_URL}${route}`,
+    changeFrequency: "monthly",
+    priority: route === "/" ? 1 : 0.8,
+  }));
+}
