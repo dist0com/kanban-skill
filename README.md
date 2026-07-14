@@ -1,14 +1,30 @@
 # Kanban skill — organize your task board in Markdown, right next to your code
 
-A skill that lets Claude Code does project management for you — proposing the
+A skill that lets Claude Code do project management for you — proposing the
 next work, writing the cards, and archiving what's done. It's a **task board in Markdown**: your
 backlog lives as plain Markdown files in `docs/kanban/` — in git, diffable, readable by both
 you and the agent. Instead of tracking work in GitHub Issues or Linear, you steer the
 board in plain language, straight from your terminal — call it **vibe kanban** if you like. No
 database, no web app, no MCP.
 
+![Kanban Quickview — the task tree rendered in the terminal](assets/quickview.jpg)
+
 It adapts to your project through a small **Configuration** block — your name, your
 tracks, your docs. Everything else is generic.
+
+## Install in one prompt
+
+From your project root, tell Claude Code (or any coding agent that can run shell commands):
+
+```
+Set up the kanban skill for this project. Read
+https://raw.githubusercontent.com/dist0com/kanban/main/INSTALL_PROMPT.txt and follow it.
+```
+
+The agent copies the skill into `.claude/skills/kanban/`, reads your codebase to fill the
+**Configuration** block, scaffolds the board under `docs/kanban/`, and proposes your first
+three tasks. That's the whole setup — from then on you just talk to the board. See
+[Install](#install) below for alternatives.
 
 ## Designed for solo founders
 
@@ -37,39 +53,10 @@ The skill is two things: a `SKILL.md` that tells Claude how to run the board, an
 ids and edit metrics.
 
 Installing is one prompt — you don't copy files or edit config by hand. Your agent reads
-your codebase, fills in the setup, and scaffolds the board for you.
-
-### Install as a plugin (one command)
-
-The repo is its own plugin marketplace, so you can add and install it straight from Claude
-Code:
-
-```
-/plugin marketplace add dist0com/kanban
-/plugin install kanban@kanban
-```
-
-Or, through the [Vercel Agent Skills directory](https://skills.sh):
-
-```
-npx skills add dist0com/kanban
-```
-
-That makes the skill available to Claude. Then, in each project you want a board, tell
-Claude **"set up the kanban skill for this project"** — it fills the **Configuration**
-block from your codebase and scaffolds `docs/kanban/` (same as the prompt below).
-
-### Recommended: let your agent install it
-
-From your project root, tell Claude Code (or any coding agent that can run shell commands):
-
-> Set up the kanban skill for this project. Read
-> https://raw.githubusercontent.com/dist0com/kanban/main/INSTALL_PROMPT.txt and follow it.
-
-The agent fetches [`INSTALL_PROMPT.txt`](INSTALL_PROMPT.txt), copies the skill into
-`.claude/skills/kanban/`, reads your codebase to fill the **Configuration** block,
-scaffolds the board under `docs/kanban/`, and proposes your first three tasks. It asks you
-at most a couple of questions where it genuinely can't infer a value.
+your codebase, fills in the setup, and scaffolds the board for you. The recommended path is
+the [one-prompt install](#install-in-one-prompt) above, where the agent fetches
+[`INSTALL_PROMPT.txt`](INSTALL_PROMPT.txt) and does everything for you, asking at most a
+couple of questions where it genuinely can't infer a value.
 
 ### Alternative: paste the prompt yourself
 
@@ -77,6 +64,26 @@ If your agent can't fetch URLs, open [`INSTALL_PROMPT.txt`](INSTALL_PROMPT.txt) 
 its contents into the agent instead — same result.
 
 That's the whole setup. From then on you just talk to the board.
+
+### Found it through the plugin marketplace?
+
+The repo is its own plugin marketplace, so you can add and install it from Claude Code:
+
+```
+/plugin marketplace add dist0com/kanban
+/plugin install kanban@kanban
+```
+
+You can also grab it from the [Vercel Agent Skills directory](https://skills.sh):
+
+```
+npx skills add dist0com/kanban
+```
+
+This gives you the skill, but not a working board yet — installing this way doesn't fill in
+your project's settings or create the board files. So after installing, run the setup prompt
+above once in each project: it copies the skill into your repo, fills in the settings from
+your code, and creates the `docs/kanban/` board.
 
 ### Requirements
 

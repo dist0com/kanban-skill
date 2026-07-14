@@ -17,6 +17,6 @@ when a source was last reviewed, so the next loop knows what changed.
 
 ## Open gaps
 
-- Setup still hand-creates the board folders (#4 would add an `init` command).
-- Not yet on any marketplace (#1, #2).
+- Plugin is installable + submitted to the community marketplace (pending review), and
+  skills.sh auto-submitted the public repo (listing pending). Still no second marketplace (#2).
 - Guides lack a worked, end-to-end example (#3).

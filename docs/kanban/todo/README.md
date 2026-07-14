@@ -11,7 +11,7 @@ _(none)_
 
 ## skill
 
-- [#4 Add an `init` command to kanban.mjs](skill/04-add-init-command.md)
+- [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 
 ## docs
 
@@ -19,6 +19,5 @@ _(none)_
 
 ## distribution
 
-- [#1 Publish as an installable plugin + submit to the official directory](distribution/01-publish-plugin.md)
 - [#2 List on a second marketplace and decide the site](distribution/02-second-marketplace-and-site.md)
 - [#5 Position against Vibe Kanban and target the winnable keywords](distribution/05-vibe-kanban-positioning.md)

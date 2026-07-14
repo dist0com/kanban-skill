@@ -1,12 +1,21 @@
 Set up the kanban skill for this project.
 
+You can reach this two ways, and both finish here:
+  - run this prompt directly, or
+  - after adding the plugin marketplace — `/plugin marketplace add dist0com/kanban` then
+    `/plugin install kanban@kanban` — which makes the skill available to browse but does
+    NOT configure a board.
+Either way the board still needs a per-project setup, and that is what this prompt does.
+The Configuration lives in your repo, so this keeps an editable copy under
+`.claude/skills/kanban/` rather than relying on the shared, read-only plugin cache.
+
 Do the following, in order. Ask me at most 3 short questions total, and only where you
 genuinely can't infer a value — otherwise pick sensible defaults and tell me what you chose.
 
 1. Get the skill into the project. If `.claude/skills/kanban/SKILL.md` does not already
    exist, copy it in:
 
-       git clone https://github.com/dist0com/kanban /tmp/kanban-skill
+       git clone https://github.com/dist0com/kanban-skill /tmp/kanban-skill
        mkdir -p .claude/skills
        cp -R /tmp/kanban-skill/skill .claude/skills/kanban
 
