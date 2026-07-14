@@ -33,7 +33,7 @@ function SubHeading({ children }: { children: string }) {
 export function Advanced() {
   return (
     <section id="deeper" className="mt-24 scroll-mt-20">
-      <SectionHeading num="04" eyebrow="Features" title="More than a flat list" />
+      <SectionHeading num="04" eyebrow="Features" title="Project management in Markdown, not a flat list" />
       <p className="text-ink">
         A flat to-do list forgets. This board repeats routine work, breaks big
         jobs into pieces, and remembers what&apos;s already done.

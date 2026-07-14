@@ -12,7 +12,7 @@ const jsonLd = {
   "@type": "SoftwareApplication",
   name: "Kanban skill",
   description:
-    "A Claude Code skill that runs a file-based kanban board. Your backlog lives as plain Markdown in docs/kanban/ — in git, diffable, no database, no web app, no MCP.",
+    "A Claude Code skill that runs a kanban board from plain Markdown files in your repo — versioned in git, no database, no web app, no MCP.",
   url: "https://kanban-skill.pages.dev",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "macOS, Linux, Windows",

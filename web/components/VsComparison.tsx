@@ -89,7 +89,7 @@ function Row({
 export function VsComparison() {
   return (
     <section className="mt-24">
-      <SectionHeading num="02" eyebrow="Head to head" title="Side by side" />
+      <SectionHeading num="02" eyebrow="Head to head" title="Kanban skill vs. GitHub Issues" />
       <p className="text-ink">
         Fourteen dimensions. A{" "}
         <FiCheck
