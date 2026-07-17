@@ -35,13 +35,14 @@ export function Advanced() {
     <section id="deeper" className="mt-24 scroll-mt-20">
       <SectionHeading num="04" eyebrow="Features" title="Project management in Markdown, not a flat list" />
       <p className="text-ink">
-        A flat to-do list forgets. This board repeats routine work, breaks big
-        jobs into pieces, and remembers what&apos;s already done.
+        A flat to-do list is just a list. This one does four things a list
+        can&apos;t — recurring work, subtasks for the big jobs, a memory of
+        what&apos;s done, and a throughput count.
       </p>
 
       {/* Recurring tasks: run on a loop */}
       <div className="mt-12">
-        <SubHeading>Jobs Claude runs on a loop</SubHeading>
+        <SubHeading>Recurring tasks</SubHeading>
         <p className="mt-2 text-muted">
           Some work is never one-and-done. Keep each as a card in{" "}
           <code className="rounded bg-accent/10 px-1.5 py-0.5 font-mono text-[0.9em] text-ink">
@@ -97,7 +98,7 @@ export function Advanced() {
 
       {/* Group / tracking task */}
       <div className="mt-12">
-        <SubHeading>Big jobs broken into pieces you can finish</SubHeading>
+        <SubHeading>Group tasks</SubHeading>
         <p className="mt-2 text-muted">
           A task too big to start tends to just sit there. When one card
           can&apos;t hold it, it becomes a{" "}
@@ -113,7 +114,7 @@ export function Advanced() {
 
       {/* Learns over time */}
       <div className="mt-12">
-        <SubHeading>The board learns over time</SubHeading>
+        <SubHeading>Project memory</SubHeading>
         <p className="mt-2 text-muted">
           Working the board is a loop. Each round, Claude proposes new work by
           pulling from three sources, you make the call, and it folds the result
@@ -144,10 +145,10 @@ export function Advanced() {
 
       {/* Metrics */}
       <div className="mt-12">
-        <SubHeading>It tracks its own throughput</SubHeading>
+        <SubHeading>Task metrics</SubHeading>
         <p className="mt-2 text-muted">
-          Your velocity lives in git, next to the work — so you can see the board
-          picking up pace over time.
+          Each archived card is one shipped unit, so your velocity is just a
+          number in git next to the work — no dashboard, no separate tool.
         </p>
         <ThroughputChart />
       </div>

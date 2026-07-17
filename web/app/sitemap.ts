@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import fs from "node:fs";
 import path from "node:path";
+import { recipes } from "@/components/recipes-content";
 
 // Required for `output: export` — emit sitemap.xml at build time.
 export const dynamic = "force-static";
@@ -24,8 +25,13 @@ function vsRoutes(): string[] {
   return routes;
 }
 
+// Recipe routes: the index plus one page per card in the catalog.
+function recipeRoutes(): string[] {
+  return ["/recipes/", ...recipes.map((r) => `/recipes/${r.slug}/`)];
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["/", ...vsRoutes()];
+  const routes = ["/", ...recipeRoutes(), ...vsRoutes()];
 
   return routes.map((route) => ({
     url: `${BASE_URL}${route}`,

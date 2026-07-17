@@ -9,7 +9,7 @@ export const features: { icon: string; title: string; body: string }[] = [
   {
     icon: "💬",
     title: "Steered in plain language",
-    body: 'Say "what\'s next?" or "#4 is done." Claude reads the board and your sources, then proposes, writes, and archives for you.',
+    body: 'Say "/kanban what\'s next?" or "/kanban #4 is done." Claude reads the board and your sources, then proposes, writes, and archives for you.',
   },
   {
     icon: "⚡",
@@ -24,12 +24,12 @@ export const features: { icon: string; title: string; body: string }[] = [
 ];
 
 export const boardRows: { say: string; does: string }[] = [
-  { say: '"what\'s next?"', does: "reads the board + your sources, proposes 3 new tasks" },
-  { say: '"add a task: …"', does: "reviews the idea, writes a card, adds it to the index" },
-  { say: '"dive deeper on #4"', does: "pushes card #4 one stage toward concrete" },
-  { say: '"review the board"', does: "checks cards for clarity, duplication, done-ness" },
-  { say: '"#4 is done"', does: "compresses it into the archive, removes the card" },
-  { say: '"#4 was a bad idea"', does: "records why in rejected.md so it's never re-proposed" },
+  { say: '"/kanban what\'s next?"', does: "reads the board + your sources, proposes 3 new tasks" },
+  { say: '"/kanban add a task: …"', does: "reviews the idea, writes a card, adds it to the index" },
+  { say: '"/kanban dive deeper on #4"', does: "pushes card #4 one stage toward concrete" },
+  { say: '"/kanban review the board"', does: "checks cards for clarity, duplication, done-ness" },
+  { say: '"/kanban #4 is done"', does: "compresses it into the archive, removes the card" },
+  { say: '"/kanban #4 was a bad idea"', does: "records why in rejected.md so it's never re-proposed" },
 ];
 
 // Recurring-task automation ladder: each run pushes a step up a rung.

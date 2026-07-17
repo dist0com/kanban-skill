@@ -49,6 +49,9 @@ export function Header() {
         <a href="/#deeper" className="transition-colors hover:text-ink">
           Features
         </a>
+        <a href="/recipes/" className="transition-colors hover:text-ink">
+          Recipes
+        </a>
         <CompareMenu />
         <a
           href={GITHUB_URL}
