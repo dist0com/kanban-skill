@@ -1,0 +1,18 @@
+import { BoardView } from "@/components/Board";
+import { readBoard } from "@/lib/board";
+import type { Board } from "@/lib/types";
+
+// Read the board on the server for the first paint (no loading flash); the
+// client refreshes via the getBoard() action after each mutation.
+export const dynamic = "force-dynamic";
+
+export default function Page() {
+  let initialBoard: Board | null = null;
+  let initialError: string | null = null;
+  try {
+    initialBoard = readBoard();
+  } catch (e) {
+    initialError = e instanceof Error ? e.message : String(e);
+  }
+  return <BoardView initialBoard={initialBoard} initialError={initialError} />;
+}

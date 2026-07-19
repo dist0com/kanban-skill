@@ -1,7 +1,12 @@
-# Position against Vibe Kanban and target the winnable keywords
-
-**Track:** distribution · **Priority:** med · **ROI:** med
-**Blocked by:** none · **Related:** #2
+---
+title: Position against Vibe Kanban and target the winnable keywords
+track: distribution
+priority: med
+roi: med
+blocked_by: []
+related: [2]
+questions: []
+---
 
 Vibe Kanban is the best-known "kanban for AI coding agents" and it is shutting down
 (the company Bloop closed; the project continues as community open source). That leaves

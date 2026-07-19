@@ -17,6 +17,16 @@ you don't re-suggest something already done.
 - One command scaffolds a fresh board — the folders, the index, and the starter files —
   so setting up in a new project no longer means creating them by hand.
 
+## Board format
+
+- Task cards now keep their meta — title, track, priority, roi, links, and open questions
+  a human still needs to answer — in a YAML frontmatter block, so tools can read and write
+  the board reliably.
+- The kanban script now owns that meta: `create --title --track ...` scaffolds a card
+  (frontmatter + body template + README entry), `update <id>` changes priority/roi/links,
+  moves a card between tracks, or renames it, and `migrate` converts an old-format board.
+  Every value is validated, so a bad track, level, or invented id is refused up front.
+
 ## Distribution
 
 - The repo is open source under Apache License 2.0, with a publishing kit for getting

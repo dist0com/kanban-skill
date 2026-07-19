@@ -8,27 +8,42 @@
    - a doc / content change → search where that content lives (your reference docs in
      the skill's Configuration).
    - a research task → check where past research is written up.
-3. Use the id you were handed (allocated via `node .claude/skills/kanban/kanban.mjs create`),
-   name the file `<id>-<short-slug>.md`, and put it in the right folder (`blockers/` or a
-   track). For a broad task, use a folder instead (see "Broad tasks: root + subtasks").
+3. Scaffold the card with the script — it writes the frontmatter, a body template, and the
+   README entry:
+
+   ```
+   node .claude/skills/kanban/kanban.mjs create --title "..." --track <track> \
+        [--priority high|med|low] [--roi high|med|low] [--blocked-by 1,2] [--related 3] \
+        [--question "..."]
+   ```
+
+   It prints the id and the file path. For a broad task, use a folder instead (see "Broad
+   tasks: root + subtasks").
 4. Before writing, scan the board for tasks this one depends on or sits next to (see
-   "Relationships"). Record them on the card.
-5. Write the card (see "Card shape"). Keep it short.
+   "Relationships"). If you didn't set them at create time, set them with
+   `update <id> --blocked-by ... --related ...` — never hand-edit the frontmatter.
+5. Write the **body** only (see "Card shape") — the summary line, `## Scope`, `## Todo`.
+   Replace the template placeholders with Write/Edit. Leave the frontmatter to the script.
 6. Fill in the todos (see "Break a task into todos").
-7. Add the card to `docs/kanban/todo/README.md` under its track (a subtask inside a group
-   folder is not listed there). Never edit `docs/kanban/next-id` — the script already
-   advanced it when it allocated your id.
+7. The README entry and `next-id` are already handled by `create`. If a meta field is
+   wrong, fix it with `update <id> --<field> ...`, not by editing the file.
 
 ## Card shape
 
-A rough shape, not a strict form. Keep lines short and plain. Add any section that
-helps; drop any that doesn't.
+A rough shape, not a strict form. Keep lines short and plain. The YAML frontmatter is
+written by `create`/`update` (don't hand-edit it); you write the body — the summary,
+scope, and todos. Add any section that helps; drop any that doesn't.
 
 ```
-# <Title>
-
-**Track:** <one of your tracks> · **Priority:** <high|med|low> · **ROI:** <high|med|low>
-**Blocked by:** #<id>, #<id> (or none) · **Related:** #<id>, #<id> (or none)
+---
+title: <one line>
+track: <one of your tracks>
+priority: <high|med|low>
+roi: <high|med|low>
+blocked_by: [<id>, <id>]   # [] for none
+related: [<id>, <id>]      # [] for none
+questions: []              # questions a human must decide; [] for none
+---
 
 <one short line: what to do and why it matters.>
 
@@ -39,6 +54,11 @@ helps; drop any that doesn't.
 - [ ] <one step you can check off>
 - [ ] <…>
 ```
+
+- **title** lives in the frontmatter — one source of truth, so no `#` H1 in the body.
+- **blocked_by / related** are lists of ids (`[]` when none).
+- **questions** — questions the board still needs a human to answer. A Review step
+  writes them; clear them back to `[]` once answered. Empty for a normal new card.
 
 **Todo** — split the scope into steps you can check off, in the order you'd do them.
 Each one is a single line.

@@ -7,10 +7,18 @@ no human. This guide covers running one and improving it.
 ## The card shape
 
 A recurring card lives in `todo/recurring/`, its own folder parallel to `blockers/` and
-the track folders (see your tracks in Configuration). Its header marks the track:
+the track folders (see your tracks in Configuration). Its frontmatter marks the track:
 
 ```
-**Track:** recurring · **Priority:** … · **ROI:** …
+---
+title: …
+track: recurring
+priority: …
+roi: …
+blocked_by: []
+related: []
+questions: []
+---
 ```
 
 It adds two sections beyond a normal card:

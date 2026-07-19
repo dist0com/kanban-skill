@@ -1,0 +1,4 @@
+{
+  "//": "The one place to configure the agent connector. Every card button spawns this command in the repo root with the generated prompt appended as the final argument. Default is a plain `claude -p` (Claude Code subscription, no extra args, no env vars). Point `command` at a different agent to swap it. The prompt is always passed as a separate argv entry, never through a shell, so it needs no escaping.",
+  "command": "claude -p"
+}

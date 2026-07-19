@@ -1,7 +1,12 @@
-# Add a worked example to the guides
-
-**Track:** docs · **Priority:** med · **ROI:** med
-**Blocked by:** none · **Related:** none
+---
+title: Add a worked example to the guides
+track: docs
+priority: med
+roi: med
+blocked_by: []
+related: []
+questions: []
+---
 
 New users get the idea faster from one real example than from a spec. Add a short
 walkthrough that shows the board before and after a full loop: propose, add, dive

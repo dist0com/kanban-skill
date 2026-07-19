@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { VsHero } from "@/components/VsHero";
-import { VsSummary } from "@/components/VsSummary";
-import { VsComparison } from "@/components/VsComparison";
-import { VsWins } from "@/components/VsWins";
-import { VsErgonomics } from "@/components/VsErgonomics";
-import { VsDecision } from "@/components/VsDecision";
+import { VsHero } from "@/components/vs-github-issues/VsHero";
+import { VsSummary } from "@/components/vs-github-issues/VsSummary";
+import { VsComparison } from "@/components/vs-github-issues/VsComparison";
+import { VsWins } from "@/components/vs-github-issues/VsWins";
+import { VsErgonomics } from "@/components/vs-github-issues/VsErgonomics";
+import { VsDecision } from "@/components/vs-github-issues/VsDecision";
 
 export const metadata: Metadata = {
   title: "Kanban skill vs. GitHub Issues — a different tool for a different job",

@@ -1,7 +1,12 @@
-# List on a second marketplace and decide the site
-
-**Track:** distribution · **Priority:** med · **ROI:** med
-**Blocked by:** none · **Related:** #1
+---
+title: List on a second marketplace and decide the site
+track: distribution
+priority: med
+roi: med
+blocked_by: []
+related: [1]
+questions: []
+---
 
 Don't depend on one channel. List on at least one more skill marketplace, and decide
 whether the skill gets its own site or a page under an existing domain.

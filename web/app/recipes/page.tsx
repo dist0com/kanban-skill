@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { RecipeCard } from "@/components/RecipeCard";
-import { recipes } from "@/components/recipes-content";
+import { RecipeCard } from "@/components/recipes/RecipeCard";
+import { recipes } from "@/components/recipes/recipes-content";
 import { panelStatic } from "@/components/styles";
 
 export const metadata: Metadata = {

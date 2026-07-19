@@ -1,7 +1,12 @@
-# Keep the board's config in the project, not in SKILL.md
-
-**Track:** skill · **Priority:** high · **ROI:** high
-**Blocked by:** none · **Related:** #1
+---
+title: Keep the board's config in the project, not in SKILL.md
+track: skill
+priority: high
+roi: high
+blocked_by: []
+related: [1]
+questions: []
+---
 
 Right now each project fills the Configuration block inside its own copy of `SKILL.md`.
 That only works when the skill is copied into the repo. If someone installs the skill as a

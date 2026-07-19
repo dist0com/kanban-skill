@@ -4,8 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { RecipeLanding } from "@/components/RecipeLanding";
-import { getRecipe, recipes } from "@/components/recipes-content";
+import { RecipeLanding } from "@/components/recipes/RecipeLanding";
+import { getRecipe, recipes } from "@/components/recipes/recipes-content";
 
 const BASE_URL = "https://kanban-skill.pages.dev";
 

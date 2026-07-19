@@ -5,6 +5,7 @@ import { GITHUB_URL } from "./content";
 // more land here later — add a row and the menu grows.
 const comparisons: { href: string; title: string }[] = [
   { href: "/vs-github-issues/", title: "vs GitHub Issues" },
+  { href: "/vs-hermes-kanban/", title: "vs Hermes Agent Kanban" },
 ];
 
 function CompareMenu() {

@@ -1,10 +1,10 @@
 import { Header } from "@/components/Header";
-import { Hero } from "@/components/Hero";
-import { Features } from "@/components/Features";
-import { Install } from "@/components/Install";
-import { BoardTable } from "@/components/BoardTable";
-import { Presets } from "@/components/Presets";
-import { Advanced } from "@/components/Advanced";
+import { Hero } from "@/components/home/Hero";
+import { Features } from "@/components/home/Features";
+import { Install } from "@/components/home/Install";
+import { BoardTable } from "@/components/home/BoardTable";
+import { Presets } from "@/components/home/Presets";
+import { Advanced } from "@/components/home/Advanced";
 import { Footer } from "@/components/Footer";
 
 const jsonLd = {

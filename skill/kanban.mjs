@@ -3,21 +3,27 @@
 //
 // Handles the id-touching moves so the board stays consistent:
 //   init    — scaffold a fresh docs/kanban/ board (folders + starter files)
-//   create  — allocate task id(s), record them as "created" for today
+//   create  — allocate task id(s); with --title, also write the card's frontmatter + index it
+//   update  — rewrite a card's frontmatter (priority/roi/links/questions, move track, rename)
+//   migrate — convert old bold-header cards to the frontmatter meta format
 //   archive — remove a finished task's file/folder + its README entry, record "completed"
 //   reject  — same removal, record "rejected"
 //   run     — record one run of a recurring task (+1 completed); keep the card
 //
-// It also keeps docs/kanban/metrics.csv (one row per day: completed, created, rejected).
+// It is the ONLY sanctioned writer of a card's frontmatter — Write/Edit are for the body
+// only. It also keeps docs/kanban/metrics.csv (one row per day: completed, created, rejected).
 //
 // Usage:
-//   node kanban.mjs init [track...]      scaffold docs/kanban/ (tracks default to feature bug research)
-//   node kanban.mjs create [--count N]   allocate N ids (default 1), print them, count as created
-//   node kanban.mjs archive <id>         finish task <id> (file/folder + README + metric)
-//   node kanban.mjs reject  <id>         reject task <id> (file/folder + README + metric)
-//   node kanban.mjs run     <id>         record one run of recurring task <id> (+1 completed, card kept)
-//   node kanban.mjs peek                 print the current next-id (no bump)
-//   node kanban.mjs metrics              print the metrics CSV
+//   node kanban.mjs init [track...]                     scaffold docs/kanban/ (default tracks: feature bug research)
+//   node kanban.mjs create [--count N]                  allocate N ids (default 1), print them
+//   node kanban.mjs create --title T --track K [opts]   scaffold one card (frontmatter + body template + index)
+//   node kanban.mjs update <id> [opts]                  rewrite a card's frontmatter / move / rename
+//   node kanban.mjs migrate [--dry-run]                 convert old bold-header cards to frontmatter
+//   node kanban.mjs archive <id>                        finish task <id> (file/folder + README + metric)
+//   node kanban.mjs reject  <id>                        reject task <id> (file/folder + README + metric)
+//   node kanban.mjs run     <id>                        record one run of recurring task <id> (+1 completed, card kept)
+//   node kanban.mjs peek                                print the current next-id (no bump)
+//   node kanban.mjs metrics                             print the metrics CSV
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -176,6 +182,220 @@ function stripReadmeRefs(target) {
   return removed
 }
 
+// ---- flags + validation (guards against hallucinated meta) -----------------
+
+// Minimal flag parser. `--key value` sets a string; a repeated `--key` builds an
+// array; a `--key` with no following value (or followed by another `--`) is a
+// boolean. An unknown flag is a hard error so a mistyped/hallucinated option can't
+// be silently ignored.
+function parseFlags(args, allowed) {
+  const flags = {}
+  const positional = []
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a.startsWith('--')) {
+      const key = a.slice(2)
+      if (allowed && !allowed.includes(key)) {
+        die(`unknown option "--${key}". allowed: ${allowed.map((f) => '--' + f).join(', ')}`)
+      }
+      const next = args[i + 1]
+      if (next === undefined || next.startsWith('--')) {
+        flags[key] = true
+      } else {
+        if (flags[key] === undefined) flags[key] = next
+        else if (Array.isArray(flags[key])) flags[key].push(next)
+        else flags[key] = [flags[key], next]
+        i++
+      }
+    } else {
+      positional.push(a)
+    }
+  }
+  return { flags, positional }
+}
+
+function slugify(s) {
+  const out = String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '')
+  return out || 'task'
+}
+
+const LEVELS = ['high', 'med', 'low']
+
+function validLevel(v, name) {
+  if (!LEVELS.includes(v)) die(`--${name} must be one of ${LEVELS.join(' | ')} (got "${v}")`)
+}
+
+function trackNames() {
+  return fs
+    .readdirSync(TODO, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+}
+
+function validTrack(track) {
+  const dir = path.join(TODO, track)
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    die(
+      `unknown track "${track}". existing tracks: ${trackNames().join(', ') || '(none)'}. ` +
+        `make the folder first or pick one of these — don't invent a track.`,
+    )
+  }
+}
+
+// Ids must be plain numbers already allocated (< ceiling). Rejects invented ids
+// like #999 that were never handed out.
+function parseIdList(raw, name, ceiling) {
+  const parts = (Array.isArray(raw) ? raw : [raw])
+    .flatMap((s) => String(s).split(','))
+    .map((s) => s.trim().replace(/^#/, ''))
+    .filter(Boolean)
+  return parts.map((p) => {
+    if (!/^\d+$/.test(p)) die(`--${name} takes task ids (numbers), got "${p}"`)
+    const n = Number(p)
+    if (n < 1 || n >= ceiling) {
+      die(`--${name} points at #${n}, not a real task id (ids so far go up to ${ceiling - 1}). don't invent ids.`)
+    }
+    return n
+  })
+}
+
+// ---- frontmatter read/write ------------------------------------------------
+
+function yamlScalar(s) {
+  s = String(s)
+  if (s === '') return '""'
+  // Quote anything that could confuse a YAML reader; otherwise keep it plain.
+  if (/^[-?:,[\]{}#&*!|>'"%@`]/.test(s) || /:\s/.test(s) || /[\n"]/.test(s) || /^\s|\s$/.test(s)) {
+    return JSON.stringify(s)
+  }
+  return s
+}
+
+function serializeFrontmatter(m) {
+  const out = ['---']
+  out.push(`title: ${yamlScalar(m.title)}`)
+  out.push(`track: ${yamlScalar(m.track)}`)
+  out.push(`priority: ${m.priority}`)
+  out.push(`roi: ${m.roi}`)
+  out.push(`blocked_by: [${(m.blocked_by || []).join(', ')}]`)
+  out.push(`related: [${(m.related || []).join(', ')}]`)
+  if (!m.questions || m.questions.length === 0) out.push('questions: []')
+  else {
+    out.push('questions:')
+    for (const q of m.questions) out.push(`  - ${yamlScalar(q)}`)
+  }
+  out.push('---')
+  return out.join('\n')
+}
+
+function unquote(v) {
+  v = String(v).trim()
+  if (v.startsWith('"') && v.endsWith('"')) {
+    try {
+      return JSON.parse(v)
+    } catch {
+      return v.slice(1, -1)
+    }
+  }
+  if (v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1)
+  return v
+}
+
+// Parse the leading `--- ... ---` block into a meta object; returns the rest as body.
+// Only needs to read what this script (and `migrate`) write.
+function parseFrontmatter(text) {
+  const lines = text.split('\n')
+  if (lines[0].trim() !== '---') return { meta: null, body: text }
+  let i = 1
+  const fm = []
+  while (i < lines.length && lines[i].trim() !== '---') {
+    fm.push(lines[i])
+    i++
+  }
+  if (i >= lines.length) return { meta: null, body: text }
+  const meta = {}
+  for (let j = 0; j < fm.length; j++) {
+    const m = fm[j].match(/^([A-Za-z_]+):\s*(.*)$/)
+    if (!m) continue
+    const key = m[1]
+    const val = m[2]
+    if (val === '') {
+      const items = []
+      while (j + 1 < fm.length && /^\s*-\s+/.test(fm[j + 1])) {
+        items.push(unquote(fm[j + 1].replace(/^\s*-\s+/, '')))
+        j++
+      }
+      meta[key] = items
+    } else if (val.startsWith('[')) {
+      const inner = val.slice(1, val.lastIndexOf(']'))
+      meta[key] = inner.split(',').map((s) => s.trim()).filter(Boolean).map(unquote)
+    } else {
+      meta[key] = unquote(val)
+    }
+  }
+  for (const k of ['blocked_by', 'related']) {
+    if (Array.isArray(meta[k])) {
+      meta[k] = meta[k].map((x) => Number(String(x).replace(/^#/, ''))).filter((n) => Number.isInteger(n))
+    } else {
+      meta[k] = []
+    }
+  }
+  if (!Array.isArray(meta.questions)) meta.questions = meta.questions ? [meta.questions] : []
+  return { meta, body: lines.slice(i + 1).join('\n') }
+}
+
+function defaultBody() {
+  return [
+    '<one short line: what to do and why it matters.>',
+    '',
+    '## Scope',
+    '- <the concrete steps>',
+    '',
+    '## Todo',
+    '- [ ] <first step>',
+    '',
+  ].join('\n')
+}
+
+// ---- README index entries --------------------------------------------------
+
+const readmeHeadingFor = (track) => (track === 'blockers' ? 'Blockers' : track)
+
+// Insert a card's bullet under its track heading, replacing a `_(none)_` placeholder
+// or appending after the section's last bullet. Adds the section if it's missing.
+function addReadmeRef(track, id, title, relPath) {
+  if (!fs.existsSync(README)) return false
+  const link = relPath.split(path.sep).join('/')
+  const bullet = `- [#${id} ${title}](${link})`
+  const heading = `## ${readmeHeadingFor(track)}`
+  let lines = fs.readFileSync(README, 'utf8').split('\n')
+  const hi = lines.findIndex((l) => l.trim().toLowerCase() === heading.toLowerCase())
+  if (hi === -1) {
+    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop()
+    lines.push('', heading, '', bullet)
+    fs.writeFileSync(README, lines.join('\n') + '\n')
+    return true
+  }
+  let end = hi + 1
+  while (end < lines.length && !/^##\s/.test(lines[end])) end++
+  const noneRel = lines.slice(hi + 1, end).findIndex((l) => l.trim() === '_(none)_')
+  if (noneRel !== -1) {
+    lines[hi + 1 + noneRel] = bullet
+  } else {
+    let lastBullet = -1
+    for (let k = hi + 1; k < end; k++) if (/^\s*-\s/.test(lines[k])) lastBullet = k
+    const at = lastBullet !== -1 ? lastBullet + 1 : lines[hi + 1] === '' ? hi + 2 : hi + 1
+    lines.splice(at, 0, bullet)
+  }
+  fs.writeFileSync(README, lines.join('\n'))
+  return true
+}
+
 // ---- init ------------------------------------------------------------------
 
 // Default tracks when `init` is run with no track args. Swap by passing your own,
@@ -245,14 +465,206 @@ function cmdInit(args) {
 
 // ---- commands --------------------------------------------------------------
 
+const CREATE_FLAGS = ['title', 'track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'slug', 'count', 'no-body']
+
+// Two modes:
+//   bare      `create [--count N]`  → allocate ids and print them (group-task setup).
+//   card mode `create --title ... --track ...` → allocate ONE id, write the card's
+//             frontmatter + a body template, and index it. The script owns the meta;
+//             fill the body with your editor and leave the frontmatter alone.
 function cmdCreate(args) {
-  const count = args.includes('--count') ? Number(args[args.indexOf('--count') + 1]) : 1
-  if (!Number.isInteger(count) || count < 1) die('--count must be a positive integer')
+  const { flags, positional } = parseFlags(args, CREATE_FLAGS)
+  if (positional.length) die(`create takes options, not positional args (got "${positional.join(' ')}")`)
+
+  if (flags.title === undefined) {
+    for (const bad of ['track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'slug', 'no-body']) {
+      if (flags[bad] !== undefined) die(`--${bad} needs --title (that's card mode). Without --title, create only allocates ids.`)
+    }
+    const count = flags.count !== undefined ? Number(flags.count) : 1
+    if (!Number.isInteger(count) || count < 1) die('--count must be a positive integer')
+    const start = readNextId()
+    const ids = Array.from({ length: count }, (_, k) => start + k)
+    writeNextId(start + count)
+    bumpMetric('created', count)
+    console.log(ids.join('\n'))
+    return
+  }
+
+  // --- card mode ---
+  if (flags.count !== undefined) die("--count can't be combined with --title (card mode makes exactly one card)")
+  const title = String(flags.title).trim()
+  if (!title) die('--title must not be empty')
+  if (flags.track === undefined) die('--track is required in card mode (e.g. --track feature)')
+  const track = String(flags.track).trim()
+  validTrack(track)
+  const priority = flags.priority !== undefined ? String(flags.priority) : 'med'
+  validLevel(priority, 'priority')
+  const roi = flags.roi !== undefined ? String(flags.roi) : 'med'
+  validLevel(roi, 'roi')
   const start = readNextId()
-  const ids = Array.from({ length: count }, (_, k) => start + k)
-  writeNextId(start + count)
-  bumpMetric('created', count)
-  console.log(ids.join('\n'))
+  const blocked_by = flags['blocked-by'] !== undefined ? parseIdList(flags['blocked-by'], 'blocked-by', start) : []
+  const related = flags.related !== undefined ? parseIdList(flags.related, 'related', start) : []
+  const questions = flags.question !== undefined ? (Array.isArray(flags.question) ? flags.question : [flags.question]).map(String) : []
+  const slug = slugify(flags.slug !== undefined ? flags.slug : title)
+  const fileRel = path.join(track, `${start}-${slug}.md`)
+  const file = path.join(TODO, fileRel)
+  if (fs.existsSync(file)) die(`${rel(file)} already exists — pick a different --slug`)
+
+  // validation passed → allocate + write
+  writeNextId(start + 1)
+  bumpMetric('created')
+  const meta = { title, track, priority, roi, blocked_by, related, questions }
+  const body = flags['no-body'] ? '' : defaultBody()
+  fs.writeFileSync(file, serializeFrontmatter(meta) + '\n\n' + body)
+  const indexed = addReadmeRef(track, start, title, fileRel)
+  console.log(start)
+  console.log(`  wrote ${rel(file)} — frontmatter is set; fill the body with your editor, leave the frontmatter to the script`)
+  if (indexed) console.log(`  indexed under "## ${readmeHeadingFor(track)}"`)
+}
+
+const UPDATE_FLAGS = ['title', 'track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'clear-questions', 'slug']
+
+// Rewrite a card's frontmatter. Also the sanctioned way to move a card between tracks
+// (--track moves the file + fixes the index) or rename it (--slug). Body is untouched.
+function cmdUpdate(args) {
+  const { flags, positional } = parseFlags(args, UPDATE_FLAGS)
+  const id = Number(positional[0])
+  if (!Number.isInteger(id)) die('need a numeric task id: update <id> [--field value ...]')
+  const found = locate(id)
+  if (!found) die(`no task with id ${id} under ${rel(TODO)}`)
+  const file = found.kind === 'group' ? path.join(found.target, 'root.md') : found.target
+  const { meta, body } = parseFrontmatter(fs.readFileSync(file, 'utf8'))
+  if (!meta) die(`${rel(file)} has no frontmatter — run \`migrate\` first`)
+
+  const changes = []
+  if (flags.title !== undefined) {
+    const t = String(flags.title).trim()
+    if (!t) die('--title must not be empty')
+    meta.title = t
+    changes.push('title')
+  }
+  if (flags.priority !== undefined) {
+    validLevel(String(flags.priority), 'priority')
+    meta.priority = String(flags.priority)
+    changes.push('priority')
+  }
+  if (flags.roi !== undefined) {
+    validLevel(String(flags.roi), 'roi')
+    meta.roi = String(flags.roi)
+    changes.push('roi')
+  }
+  const ceiling = readNextId()
+  if (flags['blocked-by'] !== undefined) {
+    meta.blocked_by = parseIdList(flags['blocked-by'], 'blocked-by', ceiling)
+    changes.push('blocked_by')
+  }
+  if (flags.related !== undefined) {
+    meta.related = parseIdList(flags.related, 'related', ceiling)
+    changes.push('related')
+  }
+  if (flags['clear-questions']) {
+    meta.questions = []
+    changes.push('questions')
+  }
+  if (flags.question !== undefined) {
+    meta.questions = (Array.isArray(flags.question) ? flags.question : [flags.question]).map(String)
+    changes.push('questions')
+  }
+
+  const curRel = path.relative(TODO, file)
+  const curTrack = curRel.split(path.sep)[0]
+  let newTrack = curTrack
+  if (flags.track !== undefined) {
+    if (found.kind === 'group') die('moving a group task between tracks by script is not supported — move the folder by hand')
+    newTrack = String(flags.track).trim()
+    validTrack(newTrack)
+  }
+  let base = path.basename(file)
+  if (flags.slug !== undefined) {
+    if (found.kind === 'group') die('renaming a group root by script is not supported')
+    base = `${id}-${slugify(flags.slug)}.md`
+  }
+  meta.track = newTrack
+  const destRel = path.join(newTrack, base)
+  const dest = path.join(TODO, destRel)
+  const moving = dest !== file
+  if (moving && fs.existsSync(dest)) die(`${rel(dest)} already exists`)
+
+  fs.writeFileSync(file, serializeFrontmatter(meta) + '\n' + body)
+  if (moving) {
+    fs.renameSync(file, dest)
+    stripReadmeRefs({ kind: 'file', rel: curRel })
+    addReadmeRef(newTrack, id, meta.title, destRel)
+    changes.push(`moved → ${destRel.split(path.sep).join('/')}`)
+  } else if (changes.includes('title')) {
+    stripReadmeRefs({ kind: 'file', rel: curRel })
+    addReadmeRef(curTrack, id, meta.title, curRel)
+  }
+  console.log(`updated #${id}: ${changes.join(', ') || '(nothing changed)'}`)
+}
+
+// ---- migrate old cards to frontmatter --------------------------------------
+
+// Pull meta out of the old bold-line header. Missing fields fall back to safe
+// defaults (empty lists, med level) rather than guessing.
+function extractOldMeta(text, file) {
+  const grab = (re) => {
+    const m = text.match(re)
+    return m ? m[1].trim() : null
+  }
+  const folderTrack = path.relative(TODO, file).split(path.sep)[0]
+  const title = grab(/^#\s+(.+)$/m) || slugify(path.basename(file, '.md').replace(/^\d+-/, '')).replace(/-/g, ' ')
+  const track = (grab(/\*\*Track:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/) || folderTrack).toLowerCase()
+  const norm = (v) => {
+    v = (v || '').toLowerCase()
+    return LEVELS.includes(v) ? v : 'med'
+  }
+  const ids = (raw) => (raw && !/none/i.test(raw) ? (raw.match(/\d+/g) || []).map(Number) : [])
+  return {
+    title,
+    track,
+    priority: norm(grab(/\*\*Priority:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
+    roi: norm(grab(/\*\*ROI:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
+    blocked_by: ids(grab(/\*\*Blocked by:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
+    related: ids(grab(/\*\*Related:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
+    questions: [],
+  }
+}
+
+// Drop the leading H1 + bold meta lines; keep the body below them.
+function stripOldHeader(text) {
+  const lines = text.split('\n')
+  let lastMeta = -1
+  for (let k = 0; k < lines.length && k < 8; k++) {
+    if (/^#\s/.test(lines[k]) || /^\*\*(Track|Priority|ROI|Blocked by|Related):\*\*/.test(lines[k])) lastMeta = k
+  }
+  const rest = lines.slice(lastMeta + 1)
+  while (rest.length && rest[0].trim() === '') rest.shift()
+  return rest.join('\n')
+}
+
+function cmdMigrate(args) {
+  const { flags } = parseFlags(args, ['dry-run', 'dry'])
+  const dry = !!(flags['dry-run'] || flags.dry)
+  const files = walkMd(TODO).filter((f) => path.basename(f) !== 'README.md')
+  let changed = 0
+  let skipped = 0
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8')
+    if (text.trimStart().startsWith('---')) {
+      skipped++
+      continue
+    }
+    const meta = extractOldMeta(text, file)
+    const out = serializeFrontmatter(meta) + '\n\n' + stripOldHeader(text).replace(/^\n+/, '')
+    if (dry) console.log(`would migrate ${rel(file)}  (track=${meta.track} priority=${meta.priority} roi=${meta.roi})`)
+    else {
+      fs.writeFileSync(file, out.endsWith('\n') ? out : out + '\n')
+      console.log(`migrated ${rel(file)}`)
+    }
+    changed++
+  }
+  console.log(`\n${dry ? '(dry run) ' : ''}${changed} card(s) ${dry ? 'to migrate' : 'migrated'}, ${skipped} already frontmatter`)
 }
 
 function cmdRemove(id, metric) {
@@ -296,6 +708,10 @@ function main() {
       return cmdInit(rest)
     case 'create':
       return cmdCreate(rest)
+    case 'update':
+      return cmdUpdate(rest)
+    case 'migrate':
+      return cmdMigrate(rest)
     case 'archive':
       return cmdRemove(Number(rest[0]), 'completed')
     case 'reject':
@@ -321,7 +737,7 @@ function main() {
   }
 }
 
-const COMMANDS = ['init', 'create', 'archive', 'reject', 'run', 'peek', 'metrics', 'help']
+const COMMANDS = ['init', 'create', 'update', 'migrate', 'archive', 'reject', 'run', 'peek', 'metrics', 'help']
 
 const HELP = `kanban — the only sanctioned writer of docs/kanban/next-id.
 
@@ -330,6 +746,17 @@ Usage: node ${rel(SELF)} <command> [args]
   init [track...]      scaffold docs/kanban/ (folders + starter files); tracks default to
                        feature bug research. Does nothing if a board already exists.
   create [--count N]   allocate N task ids (default 1), advance next-id, print them
+  create --title T --track K [opts]
+                       scaffold ONE card: write its frontmatter + a body template, index it.
+                       opts: --priority high|med|low (default med), --roi high|med|low
+                       (default med), --blocked-by 1,2, --related 3, --question "..."
+                       (repeatable), --slug my-slug, --no-body.
+                       The script owns the frontmatter — fill only the body by hand.
+  update <id> [opts]   rewrite a card's frontmatter (same opts as create, plus
+                       --clear-questions). --track moves the card + fixes the index;
+                       --slug renames it. Body is left untouched.
+  migrate [--dry-run]  convert old bold-header cards to frontmatter; missing meta falls
+                       back to empty / med. Skips cards that already have frontmatter.
   archive <id>         finish task <id>: remove its file/folder + README entry, count completed
   reject  <id>         reject task <id>: same removal, count rejected
   run     <id>         record one run of recurring task <id>: +1 completed, card kept (no archive)
@@ -337,7 +764,8 @@ Usage: node ${rel(SELF)} <command> [args]
   metrics              print docs/kanban/metrics.csv
   help                 show this
 
-Never edit next-id or metrics.csv by hand — let the script write them.`
+Never edit next-id or metrics.csv by hand — let the script write them. Never hand-write a
+card's frontmatter — use create/update. Write/Edit are only for the card body.`
 
 // Levenshtein-based suggestion so a mistyped command auto-corrects to the closest match.
 function editDistance(a, b) {

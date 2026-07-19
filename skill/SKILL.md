@@ -77,30 +77,46 @@ embarrassed to read out loud.
 
 ## The script
 
-`.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to scaffold the board or
-create, archive, or reject a task. It allocates ids, removes task files, strips the README
-entry, and records the daily metric. Run it from the repo root with `node`:
+`.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to scaffold the board,
+create, update, migrate, archive, or reject a task. It allocates ids, writes and rewrites a
+card's **frontmatter**, moves/removes task files, keeps the README index, and records the
+daily metric. Run it from the repo root with `node`:
 
 ```
-node .claude/skills/kanban/kanban.mjs init [track...]      # scaffold docs/kanban/ (tracks default to feature bug research)
-node .claude/skills/kanban/kanban.mjs create [--count N]   # allocate N ids (default 1), prints them
-node .claude/skills/kanban/kanban.mjs archive <id>         # finish task <id>
-node .claude/skills/kanban/kanban.mjs reject  <id>         # reject task <id>
-node .claude/skills/kanban/kanban.mjs run     <id>         # record one run of recurring task <id> (card kept)
-node .claude/skills/kanban/kanban.mjs peek                 # current next-id, no bump
-node .claude/skills/kanban/kanban.mjs help                 # full usage
+node .claude/skills/kanban/kanban.mjs init [track...]       # scaffold docs/kanban/ (tracks default to feature bug research)
+node .claude/skills/kanban/kanban.mjs create [--count N]    # allocate N ids (default 1), prints them
+node .claude/skills/kanban/kanban.mjs create --title "..." --track <track> [--priority high|med|low] \
+     [--roi high|med|low] [--blocked-by 1,2] [--related 3] [--question "..."] [--slug ...]
+                                                            # scaffold ONE card: writes its frontmatter + a body
+                                                            # template + the README entry. Then fill only the body.
+node .claude/skills/kanban/kanban.mjs update <id> [--priority ..] [--roi ..] [--track ..] [--slug ..] \
+     [--blocked-by ..] [--related ..] [--question ..] [--clear-questions]
+                                                            # rewrite a card's frontmatter; --track moves it, --slug renames
+node .claude/skills/kanban/kanban.mjs migrate [--dry-run]   # convert old bold-header cards to frontmatter
+node .claude/skills/kanban/kanban.mjs archive <id>          # finish task <id>
+node .claude/skills/kanban/kanban.mjs reject  <id>          # reject task <id>
+node .claude/skills/kanban/kanban.mjs run     <id>          # record one run of recurring task <id> (card kept)
+node .claude/skills/kanban/kanban.mjs peek                  # current next-id, no bump
+node .claude/skills/kanban/kanban.mjs help                  # full usage
 ```
 
 Run `help` if unsure — a mistyped command also prints usage and suggests the nearest one.
 
+The script validates every value — unknown track, bad priority/roi, invented `#id`, or a
+mistyped flag are hard errors, so a hallucinated field can't slip into a card.
+
 Never edit `docs/kanban/next-id` or `metrics.csv` by hand — let the script write them.
+**Never hand-write a card's frontmatter either.** Use `create`/`update` for the meta
+(title, track, priority, roi, blocked_by, related, questions); use Write/Edit only for the
+card **body** (summary, scope, todos).
 
 ## Task id
 
 Every task's id is the number at the front of its filename (`04-plan-cap-enforcement.md` → id 4). Ids are global and never reused.
 
-To get a new id, run `node .claude/skills/kanban/kanban.mjs create` — it prints the id and
+To get a bare id, run `node .claude/skills/kanban/kanban.mjs create` — it prints the id and
 advances `next-id`. For a group task, `create --count N` returns N consecutive ids at once.
+To scaffold a whole card in one step, pass `--title` and `--track` (see "Add a task").
 
 ## Propose the next things to do
 
@@ -153,12 +169,13 @@ whether to proceed or drop it. Never drop a task without asking a question first
    `references/task-review.md` — business necessity, feasibility, feature value,
    duplication. Read `docs/kanban/redesign.md` and drop or fix any design it warns
    against. Only proceed if it passes (or the user's answer says to).
-2. **Write the card.** Get the id from `node .claude/skills/kanban/kanban.mjs create`, then
-   spawn a subagent and give it `references/add-task.md` plus the allocated id. It writes
-   the whole card on its own — that file is the self-contained spec (steps, card shape,
-   todos, near-duplicate check, relationships) — and adds the README entry. Adding three
-   tasks? Allocate three ids up front (or `create --count 3`) and spawn three subagents in
-   parallel.
+2. **Scaffold the card, then write its body.** Create the card and its frontmatter with
+   `create --title "..." --track <track>` (add `--priority`, `--roi`, `--blocked-by`,
+   `--related`, `--question` as needed) — this writes the file, its meta, and the README
+   entry. Then spawn a subagent with `references/add-task.md` and the file path; it fills in
+   only the **body** (summary, scope, todos) with Write/Edit and leaves the frontmatter
+   alone. Adding three tasks? Run `create` three times (each returns its id) and spawn three
+   subagents in parallel.
 3. **Review the written card.** Re-check it against `references/task-review.md` — plain
    language, todos split, unambiguous plan. Keep it if it passes.
 
@@ -256,7 +273,7 @@ growth / validation / building.
 
 A **recurring task** is a job we repeat on a cadence (e.g. a weekly report), not a one-shot
 we finish and archive. Recurring cards live in `todo/recurring/`, its own folder parallel to
-`blockers/` and the track folders, and mark their header `**Track:** recurring`.
+`blockers/` and the track folders, and set `track: recurring` in their frontmatter.
 
 A recurring card carries two extra sections:
 
@@ -284,6 +301,15 @@ A recurring card carries two extra sections:
 
 Full guide in `references/recurring-task.md`.
 
+## Run the board locally
+
+`kanban-ui/` is a small Next.js app you run on your own machine to see the board and drive
+the work from buttons instead of the terminal. You don't hand-edit the board through it:
+each card's buttons spawn an agent (`claude -p`) to implement, review, reject, or archive,
+and the app refreshes when the agent finishes. Only the title/body Edit and the
+priority/ROI dropdowns write to a file directly. Start it with `cd kanban-ui && npm install
+&& npm run dev` (localhost only). Full guide in `references/local-ui.md`.
+
 ## Auto-pruning
 
 To compress `memory.md`, `archive.md`, `rejected.md` and `redesign.md` down to
@@ -302,3 +328,4 @@ docs, this step is a no-op.
 - your user-facing docs (Configuration) — what you promise and teach users.
 - `references/presets/` — optional bundles that add tracks and reviews for a specific
   kind of project (e.g. `indie-hacker.md`).
+- `references/local-ui.md` — running the local board UI (`kanban-ui/`) and its buttons.

@@ -9,6 +9,11 @@ Blockers gate the next milestone; clear them first. Everything else sits under a
 
 _(none)_
 
+## ui
+
+- [#7 Build a local kanban UI](ui/07-local-kanban-ui.md)
+- [#9 Stream agent logs and allow human-in-the-loop](ui/09-stream-agent-logs-hitl.md)
+
 ## skill
 
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)

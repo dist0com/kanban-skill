@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import fs from "node:fs";
 import path from "node:path";
-import { recipes } from "@/components/recipes-content";
+import { recipes } from "@/components/recipes/recipes-content";
 
 // Required for `output: export` — emit sitemap.xml at build time.
 export const dynamic = "force-static";
