@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { FiPlus } from "react-icons/fi";
-import { getBoard, patchCardAction, runAgentAction } from "@/app/actions";
-import type { CardPatch } from "@/lib/edit";
-import type { Board } from "@/lib/types";
+import { getBoard, runAgentAction } from "@/app/actions";
+import type { AgentInfo, Board } from "@/lib/types";
+import { AgentBadge } from "./AgentBadge";
 import {
   ActionDialog,
   type AgentReq,
@@ -19,9 +19,11 @@ import { PriorityChip, RoiTag, TodoProgress } from "./chips";
 export function BoardView({
   initialBoard,
   initialError,
+  agent,
 }: {
   initialBoard: Board | null;
   initialError: string | null;
+  agent: AgentInfo;
 }) {
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
@@ -57,25 +59,6 @@ export function BoardView({
     [refresh],
   );
 
-  // Only reached by the edit dialog; the board itself has no per-card edits.
-  const patchCard = useCallback(
-    async (id: number, patch: CardPatch) => {
-      try {
-        const res = await patchCardAction(id, patch);
-        if (!res.ok) {
-          setError(res.error || "edit failed");
-          return false;
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-        return false;
-      }
-      await refresh();
-      return true;
-    },
-    [refresh],
-  );
-
   const busy = running !== null;
 
   return (
@@ -92,10 +75,13 @@ export function BoardView({
           <span className="text-[17px] font-[800] tracking-[-0.02em]">🗂️ Kanban board</span>
           <span className="text-[12px] text-nb-ink-soft">files in docs/kanban/ are the source of truth</span>
         </div>
-        <button className="nb-cta inline-flex items-center gap-1.5" disabled={busy} onClick={() => setDialog({ kind: "create" })}>
-          <FiPlus className="text-[16px]" aria-hidden />
-          Create task
-        </button>
+        <div className="flex items-center gap-3">
+          <AgentBadge info={agent} />
+          <button className="nb-cta inline-flex items-center gap-1.5" disabled={busy} onClick={() => setDialog({ kind: "create" })}>
+            <FiPlus className="text-[16px]" aria-hidden />
+            Create task
+          </button>
+        </div>
       </header>
 
       {error && (
@@ -164,7 +150,7 @@ export function BoardView({
       {running && <RunningOverlay label={running} />}
       {result && !running && <ResultOverlay result={result} onClose={() => setResult(null)} />}
 
-      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} onPatch={patchCard} />}
+      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} />}
     </div>
   );
 }

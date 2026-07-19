@@ -5,7 +5,6 @@
 // overlays, and the input dialogs for each action.
 
 import { useState } from "react";
-import type { CardPatch } from "@/lib/edit";
 import type { AgentAction, Card } from "@/lib/types";
 import { Dialog } from "./Dialog";
 
@@ -88,16 +87,12 @@ export function ActionDialog({
   dialog,
   onClose,
   onRun,
-  onPatch,
 }: {
   dialog: Exclude<DialogState, null>;
   onClose: () => void;
   onRun: (req: AgentReq, label: string) => void;
-  onPatch: (id: number, patch: CardPatch) => Promise<boolean>;
 }) {
   const [text, setText] = useState("");
-  const [title, setTitle] = useState("kind" in dialog && dialog.kind === "edit" ? dialog.card.title : "");
-  const [body, setBody] = useState("kind" in dialog && dialog.kind === "edit" ? dialog.card.body : "");
 
   if (dialog.kind === "implement") {
     return (
@@ -165,20 +160,23 @@ export function ActionDialog({
 
   if (dialog.kind === "edit") {
     return (
-      <Dialog title={`Edit #${dialog.card.id}`} onClose={onClose} width={680}>
-        <label className="mb-1 block text-[11px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft">Title</label>
-        <input className="nb-input mb-3" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <label className="mb-1 block text-[11px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft">Body (summary + scope + todos)</label>
-        <textarea className="nb-input" rows={14} style={{ fontFamily: "var(--font-mono)", fontSize: 13 }} value={body} onChange={(e) => setBody(e.target.value)} />
-        <p className="mt-2 text-[12px] text-nb-ink-soft">Saved straight to the file — no agent. Track, id, links and questions stay managed by the agents.</p>
+      <Dialog title={`Edit #${dialog.card.id}`} onClose={onClose}>
+        <p className="mb-2 text-[13px] text-nb-ink-soft">
+          Tell the agent how to change this task. It re-reads the card and rewrites the plan —
+          summary, scope, and todos — to match. The card body is only ever edited by the agent.
+        </p>
+        <textarea
+          className="nb-input"
+          rows={4}
+          placeholder="What should change about this task? e.g. narrow the scope to…, add a todo for…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Save"
-          disabled={!title.trim()}
-          onConfirm={async () => {
-            const ok = await onPatch(dialog.card.id, { title: title.trim(), body });
-            if (ok) onClose();
-          }}
+          confirmLabel="Run edit"
+          disabled={!text.trim()}
+          onConfirm={() => onRun({ action: "edit", id: dialog.card.id, title: dialog.card.title, notes: text.trim() }, `Edit #${dialog.card.id}`)}
         />
       </Dialog>
     );

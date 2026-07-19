@@ -11,12 +11,12 @@ import { panelStatic } from "../styles";
 
 function Screenshot({ src, alt }: { src: string; alt: string }) {
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-code">
+    <div className="aspect-[3024/1490] w-full overflow-hidden rounded-lg border border-border bg-code">
       <img
         src={src}
         alt={alt}
         loading="lazy"
-        className="h-full w-full object-cover object-left-top"
+        className="h-full w-full object-cover object-top"
       />
     </div>
   );
@@ -61,7 +61,7 @@ export function HkGui() {
         it shows what the fleet is doing right now.
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6">
         <GuiCard
           tag="🗂️"
           heading="Kanban skill — local board"

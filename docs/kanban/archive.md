@@ -27,6 +27,13 @@ you don't re-suggest something already done.
   moves a card between tracks, or renames it, and `migrate` converts an old-format board.
   Every value is validated, so a bad track, level, or invented id is refused up front.
 
+## Local board UI
+
+- You can run a small web app on your own machine to see the whole board and drive the
+  work from buttons — implement, review, reject, archive, and create a task each spawn an
+  agent to do the real work, while quick edits to the title, body, priority, and ROI save
+  straight to the files.
+
 ## Distribution
 
 - The repo is open source under Apache License 2.0, with a publishing kit for getting

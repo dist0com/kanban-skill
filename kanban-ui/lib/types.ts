@@ -48,4 +48,16 @@ export type AgentAction =
   | "review"
   | "reject"
   | "archive"
+  | "edit"
   | "create";
+
+/** Which agent runs the card actions. Shown read-only in the UI — the only
+ *  supported agent today is Claude Code, so there is nothing to configure yet. */
+export interface AgentInfo {
+  /** Friendly name for the header badge, e.g. "Claude Code". */
+  name: string;
+  /** The resolved command every action runs, e.g. "claude -p". */
+  command: string;
+  /** True when using the built-in default (no agent.config.json override). */
+  isDefault: boolean;
+}

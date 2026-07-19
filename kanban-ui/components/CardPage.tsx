@@ -13,7 +13,8 @@ import {
 } from "react-icons/fi";
 import { patchCardAction, runAgentAction } from "@/app/actions";
 import type { CardPatch } from "@/lib/edit";
-import type { Card } from "@/lib/types";
+import type { AgentInfo, Card } from "@/lib/types";
+import { AgentBadge } from "./AgentBadge";
 import {
   ActionDialog,
   type AgentReq,
@@ -39,7 +40,7 @@ function MetaItem({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-export function CardPage({ card, openIds }: { card: Card; openIds: number[] }) {
+export function CardPage({ card, openIds, agent }: { card: Card; openIds: number[]; agent: AgentInfo }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [running, setRunning] = useState<string | null>(null);
@@ -106,6 +107,7 @@ export function CardPage({ card, openIds }: { card: Card; openIds: number[] }) {
           <FiArrowLeft className="text-[16px]" aria-hidden />
           Kanban board
         </Link>
+        <AgentBadge info={agent} />
       </header>
 
       <main className="mx-auto w-full max-w-[840px] px-6 py-6">
@@ -227,7 +229,7 @@ export function CardPage({ card, openIds }: { card: Card; openIds: number[] }) {
       {running && <RunningOverlay label={running} />}
       {result && !running && <ResultOverlay result={result} onClose={closeResult} />}
 
-      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} onPatch={patchCard} />}
+      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} />}
     </div>
   );
 }

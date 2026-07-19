@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // A small modal on the neo-brutalism scrim. Esc closes; clicking the backdrop
 // closes; the panel itself doesn't.
+//
+// The scrim is `position: fixed`, so it must render at the document root to
+// cover the viewport. We portal it to <body>: a `backdrop-filter`/`transform`
+// ancestor (e.g. the sticky, blurred header) would otherwise become the
+// containing block for the fixed scrim and trap it inside that header's
+// stacking context — the board would then paint over the modal.
 export function Dialog({
   title,
   onClose,
@@ -15,6 +22,9 @@ export function Dialog({
   children: React.ReactNode;
   width?: number;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -23,7 +33,9 @@ export function Dialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="nb-scrim" style={{ alignItems: "center" }} onClick={onClose}>
       <div
         className="nb-panel flex flex-col"
@@ -45,6 +57,7 @@ export function Dialog({
         </div>
         <div className="overflow-y-auto p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

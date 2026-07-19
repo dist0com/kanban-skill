@@ -11,7 +11,6 @@ _(none)_
 
 ## ui
 
-- [#7 Build a local kanban UI](ui/07-local-kanban-ui.md)
 - [#9 Stream agent logs and allow human-in-the-loop](ui/09-stream-agent-logs-hitl.md)
 
 ## skill

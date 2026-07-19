@@ -167,6 +167,30 @@ body {
 
 /* --- Board-specific bits built from the same language --------------------- */
 
+/* Header agent indicator — a quiet, clickable status pill. Outlined like the
+   design's controls but softer than a CTA, since it opens info rather than
+   firing an action. */
+.nb-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid color-mix(in srgb, var(--color-nb-ink) 20%, transparent);
+  border-radius: 9px;
+  background: var(--color-nb-paper);
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-nb-ink-soft);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+.nb-agent:hover {
+  color: var(--color-nb-ink);
+  border-color: color-mix(in srgb, var(--color-nb-ink) 40%, transparent);
+  background: var(--color-nb-wash);
+}
+
 /* Borderless meaning chip (track / priority / roi) */
 .nb-chip {
   display: inline-flex;

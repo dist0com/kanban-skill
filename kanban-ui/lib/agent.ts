@@ -2,27 +2,40 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { repoRoot } from "./paths";
-import type { AgentAction } from "./types";
+import type { AgentAction, AgentInfo } from "./types";
 
 // --- the one place the agent command is configured --------------------------
 // Reads kanban-ui/agent.config.json ({"command": "claude -p"}); falls back to a
 // plain `claude -p`. The command is split into argv on spaces (the default has
 // no quoted args) and spawned WITHOUT a shell — the prompt is always a separate
 // argv entry, so it never needs escaping and can't be shell-injected.
-function agentArgv(): string[] {
+function resolveCommand(): { command: string; isDefault: boolean } {
   const configFile = path.join(process.cwd(), "agent.config.json");
-  let command = "claude -p";
   try {
     if (fs.existsSync(configFile)) {
       const cfg = JSON.parse(fs.readFileSync(configFile, "utf8"));
       if (typeof cfg.command === "string" && cfg.command.trim()) {
-        command = cfg.command.trim();
+        return { command: cfg.command.trim(), isDefault: false };
       }
     }
   } catch {
     // keep the default on any parse error
   }
-  return command.split(/\s+/).filter(Boolean);
+  return { command: "claude -p", isDefault: true };
+}
+
+function agentArgv(): string[] {
+  return resolveCommand().command.split(/\s+/).filter(Boolean);
+}
+
+// What the UI shows for "which agent runs the work". We only support a Claude
+// Code subscription today, so the name is friendly when the command is `claude`
+// and otherwise just echoes the configured binary.
+export function agentInfo(): AgentInfo {
+  const { command, isDefault } = resolveCommand();
+  const bin = command.split(/\s+/)[0] || "claude";
+  const name = /(^|\/)claude$/.test(bin) ? "Claude Code" : bin;
+  return { name, command, isDefault };
 }
 
 // --- prompts: one place that turns a card action into agent instructions ----
@@ -35,7 +48,7 @@ export interface AgentRequest {
   action: AgentAction;
   id?: number;
   title?: string;
-  notes?: string; // implement
+  notes?: string; // implement, edit
   reason?: string; // reject
   description?: string; // create
 }
@@ -46,41 +59,39 @@ export function buildPrompt(req: AgentRequest): string {
   switch (req.action) {
     case "implement":
       return [
-        `Use the kanban skill in this repo. Implement task ${named}.`,
-        `Read its card, do the work it describes, and check off its todos as you finish each one.`,
-        req.notes ? `Extra notes from the user: ${req.notes}` : "",
-        `Do not archive or move the card — only implement and tick the todos.`,
+        `/kanban. Implement task ${req.id} ${named}.`,
+        req.notes ? `Extra notes: ${req.notes}` : "",
       ]
         .filter(Boolean)
         .join(" ");
     case "review":
+      // The skill's own "Review a task" flow archives/rejects and checks card
+      // quality — the opposite of the UI's review. So keep these guardrails.
       return [
-        `Use the kanban skill in this repo. Review whether task ${named} is really done.`,
-        `Check the work against the card. If anything is missing or a decision is still owed by the user,`,
-        `record those as open questions in the card's \`questions\` metadata with`,
+        `/kanban. Review task ${req.id} ${named}: judge whether the work is really done against the card.`,
+        `Record anything missing or any decision the user still owes as open questions with`,
         `\`${SCRIPT} update ${req.id} --question "..."\` (repeatable).`,
-        `Do not mark the task done and do not implement — only review and raise questions.`,
+        `Only review and raise questions — don't mark it done, and don't implement, archive, or reject it.`,
       ].join(" ");
     case "reject":
       return [
-        `Use the kanban skill in this repo. Reject task ${named}.`,
-        `Reason: ${req.reason || "(none given)"}.`,
-        `Follow the skill's reject flow: add a one-line entry (the idea + why) under the right topic in`,
-        `docs/kanban/rejected.md, then remove the card with \`${SCRIPT} reject ${req.id}\`.`,
+        `/kanban. Reject task ${req.id} ${named}. Reason: ${req.reason || "(none given)"}.`,
+        `Follow the skill's reject flow.`,
       ].join(" ");
     case "archive":
       return [
-        `Use the kanban skill in this repo. Finish task ${named} — all its todos are done.`,
-        `Follow the skill's finish flow: write the 1-2 line "what you can now do" note under the right topic in`,
-        `docs/kanban/archive.md, then remove the card with \`${SCRIPT} archive ${req.id}\`.`,
+        `/kanban. Archive task ${req.id} ${named}.`,
+        `Follow the skill's archive flow.`,
+      ].join(" ");
+    case "edit":
+      return [
+        `/kanban. Revise task ${req.id} ${named}: "${req.notes || ""}".`,
+        `Only revise the card — don't implement it, and don't move, archive, or reject it.`,
       ].join(" ");
     case "create":
       return [
-        `Use the kanban skill in this repo to add new task(s) from this requirement:`,
-        `"${req.description || ""}".`,
-        `Follow the skill's add-task flow — read the board first so you don't duplicate work, then scaffold the`,
-        `card(s) with \`${SCRIPT} create --title "..." --track <track> ...\` and fill each body.`,
-        `One requirement may become several cards.`,
+        `/kanban. Add task(s) from this requirement: "${req.description || ""}".`,
+        `Follow the skill's add-task flow.`,
       ].join(" ");
   }
 }

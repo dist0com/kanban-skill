@@ -1,4 +1,5 @@
 import { BoardView } from "@/components/Board";
+import { agentInfo } from "@/lib/agent";
 import { readBoard } from "@/lib/board";
 import type { Board } from "@/lib/types";
 
@@ -14,5 +15,5 @@ export default function Page() {
   } catch (e) {
     initialError = e instanceof Error ? e.message : String(e);
   }
-  return <BoardView initialBoard={initialBoard} initialError={initialError} />;
+  return <BoardView initialBoard={initialBoard} initialError={initialError} agent={agentInfo()} />;
 }
