@@ -26,7 +26,7 @@ export const features: { icon: string; title: string; body: string }[] = [
 export const boardRows: { say: string; does: string }[] = [
   { say: '"/kanban what\'s next?"', does: "reads the board + your sources, proposes 3 new tasks" },
   { say: '"/kanban add a task: …"', does: "reviews the idea, writes a card, adds it to the index" },
-  { say: '"/kanban dive deeper on #4"', does: "pushes card #4 one stage toward concrete" },
+  { say: '"/kanban nudge #4"', does: "reviews card #4, then pushes it one stage toward concrete" },
   { say: '"/kanban review the board"', does: "checks cards for clarity, duplication, done-ness" },
   { say: '"/kanban #4 is done"', does: "compresses it into the archive, removes the card" },
   { say: '"/kanban #4 was a bad idea"', does: "records why in rejected.md so it's never re-proposed" },

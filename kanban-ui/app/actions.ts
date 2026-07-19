@@ -14,7 +14,7 @@ export async function getBoard(): Promise<Board> {
   return readBoard();
 }
 
-const ACTIONS = new Set(["implement", "review", "reject", "archive", "edit", "create"]);
+const ACTIONS = new Set(["implement", "review", "reject", "archive", "edit", "create", "nudge", "resolve"]);
 
 export async function runAgentAction(
   req: AgentRequest,

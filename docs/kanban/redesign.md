@@ -9,8 +9,12 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
   ✅ the UI spawns agents (`claude -p`) to do the kanban work; on-card buttons (Implement,
   Review, Reject, Archive) call the agent connector. Only priority/roi and a title/body
   Edit are direct.
-- ❌ **UI streams agent logs / human-in-the-loop in the first version** → ✅ first version
-  fires the agent and refreshes on finish; streaming and mid-run replies are a later task.
+- ❌ **UI adds human-in-the-loop / a mid-run reply channel to the agent** → ✅ we don't do
+  live replies; the agent raises "open questions" on the card and the user answers those.
+  The only live view of a run is a read-only tail of its log.
+- ❌ **Keep an agent run's output only in memory** → ✅ write each run's full log to a
+  gitignored file, so it survives a restart and past runs can be audited. The UI tails
+  the file.
 
 ## Card format
 

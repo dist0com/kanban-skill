@@ -1,6 +1,7 @@
 ---
 name: kanban
-description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "dive deeper".
+description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "nudge", "resolve", "dive deeper".
+argument-hint: "[next | add <task> | nudge <id> | resolve <id> | done <id> | reject <id>]"
 ---
 
 The task board lives in `docs/kanban/`. Read it before suggesting or adding work.
@@ -158,11 +159,23 @@ whether to proceed or drop it. Never drop a task without asking a question first
 Follow `references/task-review.md`. Reviewing multiple? Spawn one
 subagent per card in parallel.
 
-## Dive deeper
+## Nudge
 
-Take one task and move it one step forward — from vague to concrete. Judge where the
-card stands, push it to the next stage only (not three), stop at the code level, and
-write the result back into the card. Full guide in `references/dive-deeper.md`.
+Take one task and move it one step forward — from vague to concrete. A nudge is two
+substeps: **review** the card (missing steps, missed edge cases, over-complication,
+actionability — yielding open questions for the user and revisions you decide
+yourself), then **rewrite** it (push one stage only, apply the revisions, split off
+side ideas, stop at the code level). Full guide in `references/nudge.md`.
+
+A card with unresolved `questions` in its frontmatter can't be nudged — resolve the
+questions first.
+
+## Resolve open questions
+
+When a card carries open `questions`, resolving them is the only way to move it
+forward. Research each one, decide it yourself when the evidence settles it, ask the
+user when it's a judgment call, write the answers into the card, and clear the list
+with the script. Full guide in `references/resolve.md`.
 
 ## Group task
 

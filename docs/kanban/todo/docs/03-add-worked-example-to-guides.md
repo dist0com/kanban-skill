@@ -9,8 +9,8 @@ questions: []
 ---
 
 New users get the idea faster from one real example than from a spec. Add a short
-walkthrough that shows the board before and after a full loop: propose, add, dive
-deeper, finish.
+walkthrough that shows the board before and after a full loop: propose, add, nudge,
+finish.
 
 ## Scope
 - Write a guide under `docs/guides/` that walks one task from proposed to archived.

@@ -9,7 +9,7 @@ async. Follow the `/kanban` skill for every step. The cadence below is a suggest
 run it as often as suits your board.
 
 > This card is the loop machinery, not a product task. It does NOT count toward the
-> high-priority cap in step 4, and it is NOT a dive-deeper target in step 5.
+> high-priority cap in step 4, and it is NOT a nudge target in step 5.
 
 ## Process
 
@@ -20,7 +20,7 @@ backlog. Jump to step 8 to re-arm the cron, then stop. The next run retries the 
 and only resumes once you've answered and cleared the file.
 
 **Never block to ask the user.** Any question that comes up — a failed task review, a
-dive-deeper question, a reconciliation, a priority swap — goes into
+nudge question, a reconciliation, a priority swap — goes into
 `docs/kanban/open-questions.md` under today's date (step 7). You answer async; the
 next run folds answers back into the cards. When a question would change what you'd
 do, take the safe/reversible default now, log the question, and move on.
@@ -47,8 +47,9 @@ Run these in order. Tags: `[script]` · `[ask]`.
    launch gate, your signup→paid path, and public-trust surfaces come first. Keep the top
    6, demote the rest to `med` by editing their Priority line. Never delete, only demote.
 
-5. **Dive deeper on the 6 high tasks — one subagent per card, in parallel.** Each
-   subagent reads `references/dive-deeper.md`, `references/task-review.md`, and
+5. **Nudge the 6 high tasks — one subagent per card, in parallel.** Skip a card whose
+   frontmatter `questions` list isn't empty — it's waiting on your answers, not a nudge.
+   Each subagent reads `references/nudge.md`, `references/task-review.md`, and
    `redesign.md`; reviews its card against task-review; then moves it one step forward
    (vague→concrete, stop at the code level) and writes the advance back into its own card.
    Subagents edit ONLY their own card file — no `kanban.mjs`, and no touching `README.md`,
@@ -62,7 +63,7 @@ Run these in order. Tags: `[script]` · `[ask]`.
    archive/rejected line first per the skill.
 
 7. **Log open questions → `docs/kanban/open-questions.md`.** Collect every question this
-   run raised — proposal review fails, dive-deeper questions, reconciliations, priority
+   run raised — proposal review fails, nudge questions, reconciliations, priority
    swaps — and append them under a `## <YYYY-MM-DD>` heading (newest date on top), each
    with the card it belongs to and one line of context. Write every question in plain,
    clear, short language — no jargon, one line each. Don't ask the user during the run;

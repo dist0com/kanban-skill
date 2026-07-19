@@ -49,7 +49,9 @@ export type AgentAction =
   | "reject"
   | "archive"
   | "edit"
-  | "create";
+  | "create"
+  | "nudge"
+  | "resolve";
 
 /** Which agent runs the card actions. Shown read-only in the UI — the only
  *  supported agent today is Claude Code, so there is nothing to configure yet. */

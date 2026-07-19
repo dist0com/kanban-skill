@@ -93,7 +93,8 @@ Once installed, drive it in plain language — the skill triggers on these:
 | --- | --- |
 | "what's next?" | reads the board + your sources, proposes 3 new tasks |
 | "add a task: …" | reviews the idea, writes a card, adds it to the index |
-| "dive deeper on #4" | pushes card #4 one stage toward concrete |
+| "nudge #4" | reviews card #4, then pushes it one stage toward concrete |
+| "resolve #4" | works through card #4's open questions with you |
 | "review the board" | checks cards for clarity, duplication, done-ness |
 | "#4 is done" | compresses it into `archive.md`, removes the card |
 
@@ -118,7 +119,7 @@ skill's own development, so you can see exactly what a filled-in setup looks lik
 
 Generalized from a kanban skill built for a single product ([dist0](https://dist0.com)).
 The reusable version keeps the good bones — global ids, plain-language cards, the propose /
-dive-deeper / archive loop, auto-pruning memory — and moves everything project-specific
+nudge / archive loop, auto-pruning memory — and moves everything project-specific
 into Configuration and presets.
 
 ## License

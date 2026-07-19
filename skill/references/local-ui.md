@@ -37,6 +37,21 @@ The default is `claude -p` (a Claude Code subscription). Point `command` at anot
 swap it. The config lives next to the board, so `npx` always serves the latest UI and your
 setting is never touched by an update.
 
+## The buttons
+
+The board has one **Create task** button. Each card page has its own toolbar:
+
+- **Implement** — do the work and check off the todos.
+- **Review** — judge whether the work is really done; log anything still owed as open questions.
+- **Edit** — tell the agent how to change the card; it rewrites the plan.
+- **Nudge / Resolve** — one slot that swaps by the card's state. When the card has no open
+  questions it shows **Nudge** (move the plan one step forward). When the card carries open
+  questions it shows **Resolve** instead (research and answer them) — a card waiting on
+  decisions can't be nudged until the questions are cleared.
+- **Archive** — appears once every todo is done; writes the "what you can now do" note and
+  removes the card.
+- **Reject** — add a one-line note to `rejected.md` and remove the card.
+
 ## Run it from source (contributors)
 
 Only if you're changing the UI itself. Build, then start the production server (not

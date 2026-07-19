@@ -8,7 +8,9 @@ import {
   FiArrowLeft,
   FiEdit2,
   FiEye,
+  FiHelpCircle,
   FiPlay,
+  FiTrendingUp,
   FiXCircle,
 } from "react-icons/fi";
 import { patchCardAction, runAgentAction } from "@/app/actions";
@@ -139,6 +141,19 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
             <FiEdit2 className="text-[15px]" aria-hidden />
             Edit
           </button>
+          {/* One slot: Resolve while the card has open questions (a nudge is
+              blocked until they're cleared), otherwise Nudge. Never both. */}
+          {card.questions.length > 0 ? (
+            <button className="nb-cta-ghost-sm" disabled={busy} onClick={() => setDialog({ kind: "resolve", card })}>
+              <FiHelpCircle className="text-[15px]" aria-hidden />
+              Resolve
+            </button>
+          ) : (
+            <button className="nb-cta-ghost-sm" disabled={busy} onClick={() => setDialog({ kind: "nudge", card })}>
+              <FiTrendingUp className="text-[15px]" aria-hidden />
+              Nudge
+            </button>
+          )}
           {allDone && (
             <button className="nb-cta-ghost-sm" disabled={busy} onClick={() => setDialog({ kind: "archive", card })}>
               <FiArchive className="text-[15px]" aria-hidden />

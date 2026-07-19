@@ -31,6 +31,8 @@ export type DialogState =
   | { kind: "reject"; card: Card }
   | { kind: "archive"; card: Card }
   | { kind: "edit"; card: Card }
+  | { kind: "nudge"; card: Card }
+  | { kind: "resolve"; card: Card }
   | { kind: "create" }
   | null;
 
@@ -177,6 +179,39 @@ export function ActionDialog({
           confirmLabel="Run edit"
           disabled={!text.trim()}
           onConfirm={() => onRun({ action: "edit", id: dialog.card.id, title: dialog.card.title, notes: text.trim() }, `Edit #${dialog.card.id}`)}
+        />
+      </Dialog>
+    );
+  }
+
+  if (dialog.kind === "nudge") {
+    return (
+      <Dialog title={`Nudge #${dialog.card.id}`} onClose={onClose}>
+        <p className="mb-2 text-[13px] text-nb-ink-soft">
+          The agent moves the card one step forward: it reviews the plan, then rewrites it one
+          stage — no further. Anything it can&apos;t decide is saved as an open question for you.
+        </p>
+        <DialogButtons
+          onClose={onClose}
+          confirmLabel="Run nudge"
+          onConfirm={() => onRun({ action: "nudge", id: dialog.card.id, title: dialog.card.title }, `Nudge #${dialog.card.id}`)}
+        />
+      </Dialog>
+    );
+  }
+
+  if (dialog.kind === "resolve") {
+    return (
+      <Dialog title={`Resolve #${dialog.card.id}`} onClose={onClose}>
+        <p className="mb-2 text-[13px] text-nb-ink-soft">
+          The card is waiting on open questions. The agent researches each one and decides what the
+          evidence settles, writing the answers into the card. Real judgment calls stay as open
+          questions for you to answer later.
+        </p>
+        <DialogButtons
+          onClose={onClose}
+          confirmLabel="Run resolve"
+          onConfirm={() => onRun({ action: "resolve", id: dialog.card.id, title: dialog.card.title }, `Resolve #${dialog.card.id}`)}
         />
       </Dialog>
     );

@@ -93,7 +93,24 @@ export function buildPrompt(req: AgentRequest): string {
     case "create":
       return [
         `/kanban. Add task(s) from this requirement: "${req.description || ""}".`,
-        `Follow the skill's add-task flow.`,
+        `Follow the skill's add-task flow. Create task only, don't implement it.`,
+      ].join(" ");
+    case "nudge":
+      return [
+        `/kanban. Nudge task ${req.id} ${named}: move it one step forward following \`references/nudge.md\`.`,
+        `Review the card, then rewrite it one stage only — apply the fixes you can decide,`,
+        `record decisions you still owe the user as open questions with`,
+        `\`${SCRIPT} update ${req.id} --question "..."\` (repeatable), and stop at the code level.`,
+        `Don't implement, archive, or reject it.`,
+      ].join(" ");
+    case "resolve":
+      return [
+        `/kanban. Resolve the open questions on task ${req.id} ${named} following \`references/resolve.md\`.`,
+        `Research each question, decide it yourself when the evidence settles it and note the`,
+        `decision in the card body. Leave anything that's a real judgment call as an open`,
+        `question — the user answers it later, there's no mid-run reply. Clear answered ones with`,
+        `\`${SCRIPT} update ${req.id} --clear-questions\` (or re-list only the unanswered with --question).`,
+        `Don't implement, archive, or reject it.`,
       ].join(" ");
   }
 }
