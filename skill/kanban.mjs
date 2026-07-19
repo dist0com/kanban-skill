@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url'
 // marketplace.json (see PUBLISHING.md). `version` prints this; the install/update prompt
 // also writes a `.version` stamp (source SHA + date) next to the script for `git log`
 // deltas — printed here too when present.
-const SKILL_VERSION = '0.1.0'
+const SKILL_VERSION = '0.1.1'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..', '..')
