@@ -29,6 +29,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Released version of the skill. Bump on each release alongside plugin.json and
+// marketplace.json (see PUBLISHING.md). `version` prints this; the install/update prompt
+// also writes a `.version` stamp (source SHA + date) next to the script for `git log`
+// deltas — printed here too when present.
+const SKILL_VERSION = '0.1.0'
+
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..', '..')
 const KANBAN = path.join(REPO_ROOT, 'docs', 'kanban')
@@ -460,7 +466,7 @@ function cmdInit(args) {
   writeNextId(1)
   console.log(`initialised board at ${rel(KANBAN)}/`)
   console.log(`  tracks: ${tracks.join(', ')}`)
-  console.log('  next: fill the Configuration in SKILL.md, then `create` your first task')
+  console.log('  next: fill the Configuration in config.md, then `create` your first task')
 }
 
 // ---- commands --------------------------------------------------------------
@@ -689,6 +695,19 @@ function isRecurringCard(found) {
   return found.rel.split(path.sep)[0] === 'recurring'
 }
 
+// Print the installed version. SKILL_VERSION is the released number baked into this file;
+// `.version` (written by the install/update prompt) adds the source SHA + date it came from,
+// so an update can `git log <sha>..HEAD` to summarise what changed.
+function cmdVersion() {
+  console.log(`kanban skill ${SKILL_VERSION}`)
+  const stamp = path.join(SCRIPT_DIR, '.version')
+  if (fs.existsSync(stamp)) {
+    console.log(fs.readFileSync(stamp, 'utf8').trim())
+  } else {
+    console.log('  (no .version stamp — installed before versioning, or a source checkout)')
+  }
+}
+
 function cmdRun(id) {
   if (!Number.isInteger(id)) die('need a numeric task id')
   const found = locate(id)
@@ -720,6 +739,10 @@ function main() {
       return cmdRun(Number(rest[0]))
     case 'peek':
       return console.log(readNextId())
+    case 'version':
+    case '--version':
+    case '-v':
+      return cmdVersion()
     case 'metrics':
       return console.log(fs.existsSync(METRICS) ? fs.readFileSync(METRICS, 'utf8').trim() : '(no metrics yet)')
     case 'help':
@@ -737,7 +760,7 @@ function main() {
   }
 }
 
-const COMMANDS = ['init', 'create', 'update', 'migrate', 'archive', 'reject', 'run', 'peek', 'metrics', 'help']
+const COMMANDS = ['init', 'create', 'update', 'migrate', 'archive', 'reject', 'run', 'peek', 'version', 'metrics', 'help']
 
 const HELP = `kanban — the only sanctioned writer of docs/kanban/next-id.
 
@@ -761,6 +784,7 @@ Usage: node ${rel(SELF)} <command> [args]
   reject  <id>         reject task <id>: same removal, count rejected
   run     <id>         record one run of recurring task <id>: +1 completed, card kept (no archive)
   peek                 print the current next-id (no bump)
+  version              print the installed skill version (+ source stamp if present)
   metrics              print docs/kanban/metrics.csv
   help                 show this
 

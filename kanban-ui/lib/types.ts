@@ -58,6 +58,6 @@ export interface AgentInfo {
   name: string;
   /** The resolved command every action runs, e.g. "claude -p". */
   command: string;
-  /** True when using the built-in default (no agent.config.json override). */
+  /** True when using the built-in default (no docs/kanban/ui.config.json override). */
   isDefault: boolean;
 }

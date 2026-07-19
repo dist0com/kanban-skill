@@ -25,15 +25,17 @@ either copy the skill folder in by hand (see the README) or install it as a plug
 Already wired up. Users run:
 
 ```
-/plugin marketplace add dist0com/kanban
+/plugin marketplace add dist0com/kanban-skill
 /plugin install kanban@kanban
 ```
 
 To keep it healthy:
 
 - Validate before every release: `claude plugin validate .`
-- Bump `version` in **both** `.claude-plugin/plugin.json` and `marketplace.json` on each
-  release, and tag the commit (`git tag v0.1.0`).
+- Bump `version` in **all three** places on each release — `.claude-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json`, and `SKILL_VERSION` in `skill/kanban.mjs` (what
+  `kanban.mjs version` prints, so installed projects can tell they're behind) — and tag the
+  commit (`git tag v0.1.0`).
 - Never rename the plugin `name` slug once published — it breaks everyone's install.
 - Plugin names must be kebab-case (lowercase, digits, hyphens) or the claude.ai sync
   rejects them. Ours (`kanban`) is fine.
@@ -45,7 +47,7 @@ which ships in every Claude Code install. Third parties can submit through their
 directory submission form; plugins must meet quality and security review.
 
 - [ ] Read the contribution / submission guidelines on that repo.
-- [ ] Submit `dist0com/kanban` via the form.
+- [ ] Submit `dist0com/kanban-skill` via the form.
 - [ ] Address review feedback.
 
 ## Channel 3 — third-party directories (index public repos)
@@ -55,7 +57,7 @@ having a clean public repo with a good README and the manifests above.
 
 | Directory | URL | How to get listed |
 | --- | --- | --- |
-| skills.sh (Vercel Agent Skills) | https://skills.sh | Auto-indexes public repos with a `SKILL.md` or `.claude-plugin/marketplace.json`. Install: `npx skills add dist0com/kanban`. Submission rules: https://skills.sh/docs |
+| skills.sh (Vercel Agent Skills) | https://skills.sh | Auto-indexes public repos with a `SKILL.md` or `.claude-plugin/marketplace.json`. Install: `npx skills add dist0com/kanban-skill`. Submission rules: https://skills.sh/docs |
 | Claude Marketplaces | https://claudemarketplaces.com | Indexes public repos daily; submit if not auto-picked |
 | LobeHub Skills | https://lobehub.com/skills | Submission / sync from GitHub |
 | SkillsMP | https://skillsmp.com | Submission / sync from GitHub |
@@ -76,6 +78,35 @@ Checklist for each:
 across Claude Code, Cursor, Copilot, Codex, Gemini CLI, and more. Our `SKILL.md` already
 follows it (name + description frontmatter), so the skill is portable beyond Claude Code.
 
+## Channel 5 — the board UI on npm
+
+The optional local board UI ships as its own npm package, **`kanban-skill-ui`**, so anyone
+with a `docs/kanban/` board runs it with one command — `npx kanban-skill-ui` — instead of
+copying the source. It's a Next.js app built with `output: 'standalone'`, so the published
+tarball is a prebuilt server (nothing compiles on the user's machine).
+
+How it's wired (in `kanban-ui/`):
+
+- `next.config.mjs` sets `output: 'standalone'`.
+- `bin/kanban-ui.mjs` is the `npx` entry — it boots `.next/standalone/server.js`, reads the
+  board via `KANBAN_BOARD_DIR` / `--board`, and serves `localhost:7420` by default.
+- `package.json` has `prepublishOnly: build:standalone` (builds + copies static assets into
+  the standalone dir), a `files` whitelist (`bin/`, `.next/standalone/`), and `bin`.
+- The agent connector config is **not** in the package — it lives in the consumer repo at
+  `docs/kanban/ui.config.json`, so `npx` always serves the latest UI and user config is safe.
+
+To publish a new version:
+
+```
+cd kanban-ui
+# bump "version" in package.json
+npm publish        # prepublishOnly builds the standalone server first
+```
+
+Then smoke-test from any repo that has a board: `npx kanban-skill-ui`. First publish is
+public and unscoped; the name `kanban-skill-ui` must never be renamed once live (breaks
+everyone's `npx`).
+
 ## A website (optional)
 
 Decide per task #2 on the board. Options, cheapest first:
@@ -91,6 +122,9 @@ Whatever the choice, the landing content is the README's pitch plus the two inst
 ## Release checklist
 
 1. `claude plugin validate .` passes.
-2. Version bumped in `plugin.json` **and** `marketplace.json`; commit tagged.
+2. Version bumped in `plugin.json`, `marketplace.json`, **and** `SKILL_VERSION` in
+   `skill/kanban.mjs`; commit tagged.
 3. README and guides reflect any behavior change.
-4. Push to `main`; directories that auto-sync pick it up. Ping the ones that don't.
+4. If the board UI changed, bump `kanban-ui/package.json` version and `npm publish` it
+   (Channel 5); smoke-test `npx kanban-skill-ui`.
+5. Push to `main`; directories that auto-sync pick it up. Ping the ones that don't.

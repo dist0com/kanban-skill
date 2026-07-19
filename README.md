@@ -18,7 +18,7 @@ From your project root, tell Claude Code (or any coding agent that can run shell
 
 ```
 Set up the kanban skill for this project. Read
-https://raw.githubusercontent.com/dist0com/kanban/main/INSTALL_PROMPT.txt and follow it.
+https://raw.githubusercontent.com/dist0com/kanban-skill/main/INSTALL_PROMPT.txt and follow it.
 ```
 
 The agent copies the skill into `.claude/skills/kanban/`, reads your codebase to fill the
@@ -64,6 +64,21 @@ If your agent can't fetch URLs, open [`INSTALL_PROMPT.txt`](INSTALL_PROMPT.txt) 
 its contents into the agent instead — same result.
 
 That's the whole setup. From then on you just talk to the board.
+
+### Updating
+
+Already installed and want a newer version? It's one prompt — and because the install copied
+the update guide in with the skill, there's nothing to fetch first:
+
+```
+Update the kanban skill in this project. Read
+.claude/skills/kanban/references/update.md and follow it.
+```
+
+Your settings live in one file (`.claude/skills/kanban/config.md`) and your board lives in
+`docs/kanban/`. An update overwrites only the generic files (`SKILL.md`, `kanban.mjs`, the
+references) and leaves those two alone, so you never lose your config or your tasks. Check
+your installed version any time with `node .claude/skills/kanban/kanban.mjs version`.
 
 ### Requirements
 

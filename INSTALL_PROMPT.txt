@@ -2,7 +2,7 @@ Set up the kanban skill for this project.
 
 You can reach this two ways, and both finish here:
   - run this prompt directly, or
-  - after adding the plugin marketplace — `/plugin marketplace add dist0com/kanban` then
+  - after adding the plugin marketplace — `/plugin marketplace add dist0com/kanban-skill` then
     `/plugin install kanban@kanban` — which makes the skill available to browse but does
     NOT configure a board.
 Either way the board still needs a per-project setup, and that is what this prompt does.
@@ -19,8 +19,9 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
        mkdir -p .claude/skills
        cp -R /tmp/kanban-skill/skill .claude/skills/kanban
 
-2. Read `.claude/skills/kanban/SKILL.md`, especially the Configuration block and its
-   {{PLACEHOLDERS}}.
+2. Read `.claude/skills/kanban/SKILL.md`, then `.claude/skills/kanban/config.md` — the
+   Configuration block with its {{PLACEHOLDERS}}. `config.md` is the only file you fill in;
+   the rest of the skill is generic and stays as-is.
 
 3. Analyze this repository to infer the config values: the project name and one-line goal
    (from the README / package metadata), what natural tracks the work splits into
@@ -32,8 +33,8 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
    (`.claude/skills/kanban/references/presets/indie-hacker.md`) instead of the default
    tracks.
 
-5. Edit `.claude/skills/kanban/SKILL.md` in place: replace every {{PLACEHOLDER}} with the
-   chosen value and delete the config helper comment.
+5. Edit `.claude/skills/kanban/config.md` in place: replace every {{PLACEHOLDER}} with the
+   chosen value. Leave `SKILL.md` and the rest of the skill untouched.
 
 6. Scaffold the board with the script, passing the tracks you chose in step 3:
 
@@ -43,5 +44,24 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
    folder per track, `next-id` set to `1`, and empty `archive.md`, `rejected.md`,
    `redesign.md`, `memory.md`. It's safe to re-run — it does nothing if a board exists.
 
-7. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
+7. Stamp the installed version so later updates know where they're starting from:
+
+       printf 'sha: %s\ndate: %s\n' "$(git -C /tmp/kanban-skill rev-parse HEAD)" "$(date +%F)" > .claude/skills/kanban/.version
+
+8. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
    then propose the first 3 tasks so I have something to start from.
+
+9. Recommend the local board UI and ask if I want it — don't silently skip it. It's the
+   nicest way to use the board: a local Next.js app that shows every track and drives the
+   work from buttons instead of the terminal, while the `docs/kanban/` files stay the single
+   source of truth. Tell me it runs with one command, nothing to install or compile:
+
+       npx kanban-skill-ui        # http://localhost:7420, localhost only
+
+   If I say yes, run it for me (or hand me the command) and point me at
+   `.claude/skills/kanban/references/local-ui.md` for options like `--port`, `--board`, and
+   configuring which agent the buttons spawn via `docs/kanban/ui.config.json`.
+
+To pull a newer version of the skill later, follow
+`.claude/skills/kanban/references/update.md` — the install copies it in, so updating never
+needs anything fetched from upstream first.

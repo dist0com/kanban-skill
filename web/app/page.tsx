@@ -3,6 +3,7 @@ import { Hero } from "@/components/home/Hero";
 import { Features } from "@/components/home/Features";
 import { Install } from "@/components/home/Install";
 import { BoardTable } from "@/components/home/BoardTable";
+import { BoardUI } from "@/components/home/BoardUI";
 import { Presets } from "@/components/home/Presets";
 import { Advanced } from "@/components/home/Advanced";
 import { Footer } from "@/components/Footer";
@@ -36,6 +37,7 @@ export default function Home() {
         <Features />
         <Install />
         <BoardTable />
+        <BoardUI />
         <Presets />
         <Advanced />
       </main>

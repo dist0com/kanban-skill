@@ -5,12 +5,14 @@ import { repoRoot } from "./paths";
 import type { AgentAction, AgentInfo } from "./types";
 
 // --- the one place the agent command is configured --------------------------
-// Reads kanban-ui/agent.config.json ({"command": "claude -p"}); falls back to a
-// plain `claude -p`. The command is split into argv on spaces (the default has
-// no quoted args) and spawned WITHOUT a shell — the prompt is always a separate
-// argv entry, so it never needs escaping and can't be shell-injected.
+// Reads the consumer repo's docs/kanban/ui.config.json ({"command": "claude -p"});
+// falls back to a plain `claude -p`. Config lives in the project (not next to the
+// UI source) so it survives an npx run, where the package itself sits in the npm
+// cache. The command is split into argv on spaces (the default has no quoted
+// args) and spawned WITHOUT a shell — the prompt is always a separate argv entry,
+// so it never needs escaping and can't be shell-injected.
 function resolveCommand(): { command: string; isDefault: boolean } {
-  const configFile = path.join(process.cwd(), "agent.config.json");
+  const configFile = path.join(repoRoot(), "docs", "kanban", "ui.config.json");
   try {
     if (fs.existsSync(configFile)) {
       const cfg = JSON.parse(fs.readFileSync(configFile, "utf8"));

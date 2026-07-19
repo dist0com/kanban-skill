@@ -5,41 +5,18 @@ description: Use to pick the next things to work on, add a task, mark one done, 
 
 The task board lives in `docs/kanban/`. Read it before suggesting or adding work.
 
-<!--
-  ═══════════════════════════════════════════════════════════════════════════
-  CONFIGURATION — fill this in for your project during install.
-  Anything left as a {{PLACEHOLDER}} falls back to the sensible default noted
-  next to it. See the repo README for the one-shot install prompt that fills
-  these in by reading your codebase and asking you a few questions.
-  ═══════════════════════════════════════════════════════════════════════════
--->
-
 ## Configuration
 
-This skill adapts to your project through the values below. The install step fills
-them in; until then, the defaults apply.
+This skill adapts to your project through `config.md` in this folder — your project name,
+tracks, planning sources, reference docs, and optional preset. **Read `config.md` first.**
+The install step fills it in; until then its defaults apply.
 
-- **Project** — {{PROJECT_NAME}}: {{PROJECT_GOAL}}
-  _(default: this repository; its goal is whatever the README states.)_
-- **Tracks** — the buckets a task can live in, with a rough share of effort:
-  {{TRACKS}}
-  _(default: `feature` 60%, `bug` 25%, `research` 15%. A track is just a folder
-  under `docs/kanban/todo/`.)_
-- **Planning sources** — what to read when proposing new work:
-  {{PLANNING_SOURCES}}
-  _(default: the codebase, `docs/`, and the board itself.)_
-- **Reference docs** — optional files the skill reads when they exist. Leave blank
-  if you don't have them:
-  - roadmap / direction: {{ROADMAP_DOC}}
-  - user-facing docs the work should keep in sync: {{DOCS_DIR}}
-  - anything else worth scanning each loop: {{EXTRA_SOURCES}}
-- **Preset** — an optional bundle of extra tracks and reviews for a specific kind of
-  project: {{PRESET}}
-  _(default: none. `references/presets/indie-hacker.md` adds growth / validation /
-  building tracks, market-validation, and a moat test for a solo product launch.)_
+`config.md` is the **only** file here that carries your project's settings. Everything else
+(`SKILL.md`, `kanban.mjs`, `references/`) is generic and owned by upstream — an update
+overwrites those wholesale and never touches `config.md` (see "Updating the skill").
 
-Where this doc says "your tracks", "your planning sources", or "your reference docs",
-it means the values above.
+Where this doc says "your tracks", "your planning sources", or "your reference docs", it
+means the values in `config.md`.
 
 ## Writing style
 
@@ -92,15 +69,12 @@ node .claude/skills/kanban/kanban.mjs create --title "..." --track <track> [--pr
 node .claude/skills/kanban/kanban.mjs update <id> [--priority ..] [--roi ..] [--track ..] [--slug ..] \
      [--blocked-by ..] [--related ..] [--question ..] [--clear-questions]
                                                             # rewrite a card's frontmatter; --track moves it, --slug renames
-node .claude/skills/kanban/kanban.mjs migrate [--dry-run]   # convert old bold-header cards to frontmatter
 node .claude/skills/kanban/kanban.mjs archive <id>          # finish task <id>
 node .claude/skills/kanban/kanban.mjs reject  <id>          # reject task <id>
 node .claude/skills/kanban/kanban.mjs run     <id>          # record one run of recurring task <id> (card kept)
 node .claude/skills/kanban/kanban.mjs peek                  # current next-id, no bump
 node .claude/skills/kanban/kanban.mjs help                  # full usage
 ```
-
-Run `help` if unsure — a mistyped command also prints usage and suggests the nearest one.
 
 The script validates every value — unknown track, bad priority/roi, invented `#id`, or a
 mistyped flag are hard errors, so a hallucinated field can't slip into a card.
@@ -303,12 +277,13 @@ Full guide in `references/recurring-task.md`.
 
 ## Run the board locally
 
-`kanban-ui/` is a small Next.js app you run on your own machine to see the board and drive
-the work from buttons instead of the terminal. You don't hand-edit the board through it:
-each card's buttons spawn an agent (`claude -p`) to implement, review, reject, or archive,
-and the app refreshes when the agent finishes. Only the title/body Edit and the
-priority/ROI dropdowns write to a file directly. Start it with `cd kanban-ui && npm install
-&& npm run dev` (localhost only). Full guide in `references/local-ui.md`.
+Optional: a small local UI to drive the board from buttons instead of the terminal. Run it
+from your repo root with `npx kanban-skill-ui` (localhost only). Full guide in
+`references/local-ui.md`.
+
+## Updating the skill and local UI
+
+Pulling a newer version into a project you already installed it in. Full guide in `references/update.md`.
 
 ## Auto-pruning
 
@@ -329,3 +304,5 @@ docs, this step is a no-op.
 - `references/presets/` — optional bundles that add tracks and reviews for a specific
   kind of project (e.g. `indie-hacker.md`).
 - `references/local-ui.md` — running the local board UI (`kanban-ui/`) and its buttons.
+- `references/update.md` — pulling a newer version of the skill into an installed project.
+- `config.md` — your project's settings (the only file an update leaves untouched).

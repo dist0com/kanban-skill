@@ -47,6 +47,9 @@ export function Header() {
         <a href="/#board" className="transition-colors hover:text-ink">
           Using it
         </a>
+        <a href="/#ui" className="transition-colors hover:text-ink">
+          Board UI
+        </a>
         <a href="/#deeper" className="transition-colors hover:text-ink">
           Features
         </a>

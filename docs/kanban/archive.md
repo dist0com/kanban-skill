@@ -33,6 +33,8 @@ you don't re-suggest something already done.
   work from buttons — implement, review, reject, archive, and create a task each spawn an
   agent to do the real work, while quick edits to the title, body, priority, and ROI save
   straight to the files.
+- You start that app with one command from your repo — `npx kanban-skill-ui` — with nothing
+  to install or build, and set which agent its buttons use in a small file next to the board.
 
 ## Distribution
 

@@ -33,7 +33,7 @@ function SubHeading({ children }: { children: string }) {
 export function Advanced() {
   return (
     <section id="deeper" className="mt-24 scroll-mt-20">
-      <SectionHeading num="04" eyebrow="Features" title="Project management in Markdown, not a flat list" />
+      <SectionHeading num="05" eyebrow="Features" title="Project management in Markdown, not a flat list" />
       <p className="text-ink">
         A flat to-do list is just a list. This one does four things a list
         can&apos;t — recurring work, subtasks for the big jobs, a memory of

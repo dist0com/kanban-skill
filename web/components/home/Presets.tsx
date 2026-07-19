@@ -14,7 +14,7 @@ const trackColor: Record<string, { bar: string; text: string }> = {
 export function Presets() {
   return (
     <section id="solo" className="mt-24 scroll-mt-20">
-      <SectionHeading num="03" eyebrow="Presets" title="Built for solo founders" />
+      <SectionHeading num="04" eyebrow="Presets" title="Built for solo founders" />
       <p className="text-ink">
         Building all day while nobody&apos;s watching is the classic solo-founder
         trap. This preset splits your time three ways — finding users, checking

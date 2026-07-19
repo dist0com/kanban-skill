@@ -1,4 +1,4 @@
-export const GITHUB_URL = "https://github.com/dist0com/kanban";
+export const GITHUB_URL = "https://github.com/dist0com/kanban-skill";
 
 export const features: { icon: string; title: string; body: string }[] = [
   {
@@ -30,6 +30,16 @@ export const boardRows: { say: string; does: string }[] = [
   { say: '"/kanban review the board"', does: "checks cards for clarity, duplication, done-ness" },
   { say: '"/kanban #4 is done"', does: "compresses it into the archive, removes the card" },
   { say: '"/kanban #4 was a bad idea"', does: "records why in rejected.md so it's never re-proposed" },
+];
+
+// The local board UI: each card carries buttons that hand the work to an agent,
+// so common moves don't have to be re-typed into the chat every time. Kept as
+// short one-liners — the buttons are self-explanatory once you see the board.
+export const uiActions: { icon: string; label: string; body: string }[] = [
+  { icon: "🔨", label: "Implement", body: "hand the card to Claude to build" },
+  { icon: "🔍", label: "Review", body: "check the work is really done" },
+  { icon: "✏️", label: "Edit", body: "revise the card, don't run it" },
+  { icon: "📦", label: "Archive", body: "sweep a finished card away" },
 ];
 
 // Recurring-task automation ladder: each run pushes a step up a rung.

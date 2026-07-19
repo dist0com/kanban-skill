@@ -1,2 +1,7 @@
 # Dogfooding symlink -> skill/ (avoids syncing edits across two paths)
 .claude/
+
+# Per-install version stamp (written by INSTALL/UPDATE prompts, not source)
+skill/.version
+
+keyword-research/
