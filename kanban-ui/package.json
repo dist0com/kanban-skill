@@ -26,7 +26,7 @@
     "build:standalone": "next build && node scripts/copy-standalone-assets.mjs",
     "start": "next start",
     "lint": "next lint",
-    "prepublishOnly": "npm run build:standalone"
+    "prepublishOnly": "node ../scripts/sync-version.mjs --check && npm run build:standalone"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",

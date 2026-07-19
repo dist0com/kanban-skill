@@ -29,10 +29,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Released version of the skill. Bump on each release alongside plugin.json and
-// marketplace.json (see PUBLISHING.md). `version` prints this; the install/update prompt
-// also writes a `.version` stamp (source SHA + date) next to the script for `git log`
-// deltas — printed here too when present.
+// Released version of the skill. Do NOT hand-edit — it's stamped from the repo's root
+// VERSION file by scripts/sync-version.mjs (the one number for the whole repo; see
+// PUBLISHING.md). It's baked in because this file is copied into installed projects away
+// from the manifests. `version` prints this; the install/update prompt also writes a
+// `.version` stamp (source SHA + date) next to the script for `git log` deltas — printed
+// here too when present.
 const SKILL_VERSION = '0.1.1'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))

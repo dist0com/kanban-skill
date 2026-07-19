@@ -32,10 +32,14 @@ Already wired up. Users run:
 To keep it healthy:
 
 - Validate before every release: `claude plugin validate .`
-- Bump `version` in **all three** places on each release — `.claude-plugin/plugin.json`,
-  `.claude-plugin/marketplace.json`, and `SKILL_VERSION` in `skill/kanban.mjs` (what
-  `kanban.mjs version` prints, so installed projects can tell they're behind) — and tag the
-  commit (`git tag v0.1.0`).
+- **One version, one place.** The canonical version is the root `VERSION` file. Bump it and
+  run `node scripts/sync-version.mjs`, which stamps every derived spot —
+  `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `SKILL_VERSION` in
+  `skill/kanban.mjs` (what `kanban.mjs version` prints, so installed projects can tell
+  they're behind), and `kanban-ui/package.json`. Then tag the commit (`git tag v0.1.1`).
+  `node scripts/sync-version.mjs 0.1.2` bumps `VERSION` and stamps in one step;
+  `--check` verifies everything is in sync (the UI's `prepublishOnly` runs it, so a
+  mismatched UI can't be published).
 - Never rename the plugin `name` slug once published — it breaks everyone's install.
 - Plugin names must be kebab-case (lowercase, digits, hyphens) or the claude.ai sync
   rejects them. Ours (`kanban`) is fine.
@@ -122,9 +126,12 @@ Whatever the choice, the landing content is the README's pitch plus the two inst
 ## Release checklist
 
 1. `claude plugin validate .` passes.
-2. Version bumped in `plugin.json`, `marketplace.json`, **and** `SKILL_VERSION` in
-   `skill/kanban.mjs`; commit tagged.
+2. `node scripts/sync-version.mjs <new-version>` bumps the root `VERSION` and stamps all
+   derived spots (plugin.json, marketplace.json, `SKILL_VERSION`, kanban-ui/package.json);
+   commit and tag it (`git tag v<new-version>`).
 3. README and guides reflect any behavior change.
-4. If the board UI changed, bump `kanban-ui/package.json` version and `npm publish` it
-   (Channel 5); smoke-test `npx kanban-skill-ui`.
-5. Push to `main`; directories that auto-sync pick it up. Ping the ones that don't.
+4. `npm publish` the board UI from `kanban-ui/` (Channel 5) — its `prepublishOnly` runs
+   `sync-version.mjs --check` first, so a version-drifted UI is refused; smoke-test
+   `npx kanban-skill-ui`. The UI shares the one version, so publish it every release.
+5. Push to `main` **with tags** (`git push --tags`); directories that auto-sync pick it up.
+   Ping the ones that don't.
