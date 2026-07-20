@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { BASE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  // Update to the production domain once the Pages project has one.
-  metadataBase: new URL("https://kanban-skill.pages.dev"),
+  metadataBase: new URL(BASE_URL),
   title: "Kanban skill — a local task board in Markdown, next to your code",
   description:
     "A Claude Code skill that runs a kanban board for you — your backlog lives as plain Markdown files in git. No database, no web app, no MCP.",

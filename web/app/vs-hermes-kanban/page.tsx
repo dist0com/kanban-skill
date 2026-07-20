@@ -9,6 +9,7 @@ import { HkMemory } from "@/components/vs-hermes-kanban/HkMemory";
 import { HkGui } from "@/components/vs-hermes-kanban/HkGui";
 import { HkWins } from "@/components/vs-hermes-kanban/HkWins";
 import { HkDecision } from "@/components/vs-hermes-kanban/HkDecision";
+import { BASE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Kanban skill vs. Hermes Agent Kanban — a lean file-based board vs. a durable runtime",
@@ -37,7 +38,7 @@ const jsonLd = {
   headline: "Kanban skill vs. Hermes Agent Kanban",
   description:
     "How the file-based kanban skill compares to Hermes Agent Kanban: two overlapping agent kanban boards — plain diffable files that run on any agent (even Hermes) vs. a durable, shared SQLite queue many named agents claim tasks from.",
-  url: "https://kanban-skill.pages.dev/vs-hermes-kanban/",
+  url: `${BASE_URL}/vs-hermes-kanban/`,
 };
 
 export default function VsHermesPage() {

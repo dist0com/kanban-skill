@@ -2,9 +2,10 @@
 // a cadence that never archives; each pass is a run, and the card sharpens over
 // time until it needs no human (see the kanban skill's recurring-task guide).
 // For now every recipe is a recurring task; other kinds may come later.
+import { BASE_URL } from "@/lib/site";
 
 // Production origin, used to build the copy-paste install prompt with a real URL.
-export const SITE_ORIGIN = "https://kanban-skill.pages.dev";
+export const SITE_ORIGIN = BASE_URL;
 
 // One key step of the task, shown as a card and folded into the HowTo schema.
 // `art` names the SVG glyph drawn for it (see RecipeStepIcon in RecipeLanding).

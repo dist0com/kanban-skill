@@ -45,6 +45,8 @@ you don't re-suggest something already done.
 - A vetted card now shows a `ready` pill, so you can scan the board for what to build next
   instead of re-reading card bodies. A nudge that ends with a concrete plan and no open
   questions marks the card ready; a new open question drops it back to a plain todo.
+- A link to a task that is no longer on the board (archived, rejected, or a bad URL) shows
+  a short notice and sends you back to the board after a few seconds, instead of a dead 404.
 - A group task shows as one card on the board (never a card per subtask). Its page lists
   the subtasks as links with todo progress, and each subtask page links back up to the root.
 

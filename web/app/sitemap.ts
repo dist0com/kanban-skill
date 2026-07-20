@@ -2,11 +2,10 @@ import type { MetadataRoute } from "next";
 import fs from "node:fs";
 import path from "node:path";
 import { recipes } from "@/components/recipes/recipes-content";
+import { BASE_URL } from "@/lib/site";
 
 // Required for `output: export` — emit sitemap.xml at build time.
 export const dynamic = "force-static";
-
-const BASE_URL = "https://kanban-skill.pages.dev";
 
 // Discover every comparison route by scanning `app/` for `vs-*` directories
 // that hold a `page.tsx`. New comparison pages are picked up automatically at

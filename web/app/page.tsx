@@ -7,6 +7,7 @@ import { BoardUI } from "@/components/home/BoardUI";
 import { Presets } from "@/components/home/Presets";
 import { Advanced } from "@/components/home/Advanced";
 import { Footer } from "@/components/Footer";
+import { BASE_URL } from "@/lib/site";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -14,7 +15,7 @@ const jsonLd = {
   name: "Kanban skill",
   description:
     "A Claude Code skill that runs a kanban board from plain Markdown files in your repo — versioned in git, no database, no web app, no MCP.",
-  url: "https://kanban-skill.pages.dev",
+  url: BASE_URL,
   applicationCategory: "DeveloperApplication",
   operatingSystem: "macOS, Linux, Windows",
   offers: {

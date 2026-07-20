@@ -4,7 +4,7 @@
   "description": "Local kanban board UI — run it on your machine to see the board and spawn agents (claude -p) to do the kanban work. Files in docs/kanban/ stay the source of truth.",
   "keywords": ["kanban", "claude", "claude-code", "agent", "markdown", "board", "ui"],
   "license": "Apache-2.0",
-  "homepage": "https://kanban-skill.pages.dev/",
+  "homepage": "https://kanbanskill.cc/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dist0com/kanban-skill.git",

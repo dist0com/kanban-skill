@@ -6,8 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RecipeLanding } from "@/components/recipes/RecipeLanding";
 import { getRecipe, recipes } from "@/components/recipes/recipes-content";
-
-const BASE_URL = "https://kanban-skill.pages.dev";
+import { BASE_URL } from "@/lib/site";
 
 // Pre-render one static page per recipe (required for `output: export`).
 export function generateStaticParams() {

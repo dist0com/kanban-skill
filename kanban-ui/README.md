@@ -1,6 +1,6 @@
 # kanban-skill-ui
 
-The optional local web UI for the [kanban skill](https://kanban-skill.pages.dev/) — a
+The optional local web UI for the [kanban skill](https://kanbanskill.cc/) — a
 task board that lives as plain Markdown in your repo under `docs/kanban/`. Run it on your
 own machine to see the whole board and drive the work from buttons instead of the terminal.
 
@@ -70,7 +70,7 @@ serves the latest UI and your setting is never touched by an update.
 
 ## Links
 
-- Kanban skill & docs: https://kanban-skill.pages.dev/
+- Kanban skill & docs: https://kanbanskill.cc/
 - Source: https://github.com/dist0com/kanban-skill (this package lives in `kanban-ui/`)
 
 ## License

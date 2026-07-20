@@ -7,6 +7,7 @@ import { VsComparison } from "@/components/vs-github-issues/VsComparison";
 import { VsWins } from "@/components/vs-github-issues/VsWins";
 import { VsErgonomics } from "@/components/vs-github-issues/VsErgonomics";
 import { VsDecision } from "@/components/vs-github-issues/VsDecision";
+import { BASE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Kanban skill vs. GitHub Issues — a different tool for a different job",
@@ -35,7 +36,7 @@ const jsonLd = {
   headline: "Kanban skill vs. GitHub Issues",
   description:
     "How the file-based kanban skill compares to GitHub Issues across storage, token cost, agent ergonomics, teams, and transparency.",
-  url: "https://kanban-skill.pages.dev/vs-github-issues/",
+  url: `${BASE_URL}/vs-github-issues/`,
 };
 
 export default function VsPage() {

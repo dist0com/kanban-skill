@@ -13,7 +13,6 @@ _(none)_
 
 - [#11 Agent run state management](11-agent-run-state-management/root.md) — group
   - [#14 Tail the run log on the UI](11-agent-run-state-management/features/14-tail-logs-on-ui.md)
-- [#20 Redirect to the board when a task id is not found](features/20-redirect-to-the-board-when-a-task-id-is-not-found.md)
 
 ## skill
 

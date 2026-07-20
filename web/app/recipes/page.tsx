@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { RecipeCard } from "@/components/recipes/RecipeCard";
 import { recipes } from "@/components/recipes/recipes-content";
 import { panelStatic } from "@/components/styles";
+import { BASE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Recipes — ready-made recurring tasks for your kanban board",
@@ -32,7 +33,7 @@ const jsonLd = {
   name: "Kanban skill recipes",
   description:
     "Ready-made recurring tasks you add to your kanban board in one prompt.",
-  url: "https://kanban-skill.pages.dev/recipes/",
+  url: `${BASE_URL}/recipes/`,
 };
 
 export default function RecipesPage() {
