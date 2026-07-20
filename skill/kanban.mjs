@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url'
 // from the manifests. `version` prints this; the install/update prompt also writes a
 // `.version` stamp (source SHA + date) next to the script for `git log` deltas — printed
 // here too when present.
-const SKILL_VERSION = '0.1.1'
+const SKILL_VERSION = '0.2.0'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..', '..')
