@@ -22,6 +22,8 @@ hypotheticals.
 3. **Over-complication.** Is the design more machinery than the value justifies? Name
    what to cut.
 4. **Actionability.** Is the card still a rough idea nobody could start on?
+5. **Stale todos.** Check each unchecked todo against the repo — work sometimes lands
+   without the box getting ticked. Note the ones that are already done.
 
 The review's outcome is two lists:
 
@@ -45,10 +47,12 @@ The review's outcome is two lists:
    These are examples, not a fixed list. Read the task and decide what "one step
    forward" means for it.
 2. **Apply the revisions** from the review.
-3. **Split off side ideas.** An idea that came up during the nudge but isn't part of
+3. **Refresh the todo list.** Tick off every todo the review found already done. If
+   every box already matches reality, leave the list as is.
+4. **Split off side ideas.** An idea that came up during the nudge but isn't part of
    this task becomes its own card (follow `references/add-task.md`, including its rule
    against near-duplicate splits) — not a bullet buried in this one.
-4. **Write the result back into the card body.** Use plain, short, clear language, the
+5. **Write the result back into the card body.** Use plain, short, clear language, the
    way `references/add-task.md` writes a card: short lines, plain words, no jargon. A
    reader should get each line at a glance.
 

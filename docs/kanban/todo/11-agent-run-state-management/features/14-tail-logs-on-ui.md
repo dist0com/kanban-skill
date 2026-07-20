@@ -32,6 +32,7 @@ Turn the one "last run log" slot into an always-visible **Runs** area on every c
 - The area is always there. A card with no runs shows one plain line: "No runs yet. A run's log will show here."
 - A live run tails at the top, as today.
 - Under it, the card's past runs, newest first: what each did (Implement, Nudge, …), when, and pass or fail. Click one to read its saved log.
+- A run that outlived a UI restart ends with no known result. List it as finished without a pass/fail mark — don't guess.
 - Save each finished run's record (action, time, result, which log) the same way live runs are already saved, so the list comes back after a UI restart.
 - Follow the existing disk rule: only the last 20 runs keep logs. A run whose log was deleted drops off the list, so every listed run opens.
 - Keep everything read-only, and keep the board badge opening the live tail.

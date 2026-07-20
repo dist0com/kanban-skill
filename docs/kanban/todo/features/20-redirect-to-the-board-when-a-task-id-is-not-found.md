@@ -3,7 +3,7 @@ title: Redirect to the board when a task id is not found
 track: features
 priority: low
 roi: med
-status: todo
+status: implementing
 blocked_by: []
 related: []
 questions: []

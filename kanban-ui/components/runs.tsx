@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getRunAction, listRunsAction, startAgentAction } from "@/app/actions";
 import type { RunView } from "@/lib/types";
-import type { AgentReq, RunResult } from "./agent-shared";
+import type { AgentReq } from "./agent-shared";
 
 const POLL_MS = 1500;
 const LOG_POLL_MS = 1200; // how often the live log tail refreshes
@@ -70,19 +70,6 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
   );
 
   return { runs, start };
-}
-
-// Shape a finished run for the result overlay. The agent's final message when
-// the event stream parsed one, else the raw tail (stdout+stderr were merged
-// into one log); a spawn failure sets error.
-export function runToResult(run: RunView): RunResult {
-  return {
-    ok: !!run.ok,
-    code: run.code ?? null,
-    stdout: run.result || run.tail || "",
-    stderr: "",
-    error: run.error,
-  };
 }
 
 // Card ids that currently have a running agent (from any tab).

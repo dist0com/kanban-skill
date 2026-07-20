@@ -23,15 +23,13 @@ import {
   ActionDialog,
   type AgentReq,
   type DialogState,
-  ResultOverlay,
   RunLog,
   RUNNING_VERB,
-  type RunResult,
   RunningBadge,
 } from "./agent-shared";
 import { LevelSelect, StatusPill, TodoProgress, TrackChip } from "./chips";
 import { Markdown } from "./Markdown";
-import { latestRunForCard, runningCardIds, runningRunForCard, runToResult, type StartedRun, useAgentRuns, useRunLog } from "./runs";
+import { latestRunForCard, runningCardIds, runningRunForCard, type StartedRun, useAgentRuns, useRunLog } from "./runs";
 
 const CAP = "text-[10px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft";
 
@@ -50,18 +48,16 @@ function MetaItem({ label, children }: { label: string; children: React.ReactNod
 export function CardPage({ card, openIds, agent }: { card: Card; openIds: number[]; agent: AgentInfo }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>(null);
-  // `gone` marks a run that deleted this card (reject/archive) — on close we go
-  // back to the board instead of refreshing into a 404.
-  const [result, setResult] = useState<{ label: string; res: RunResult; gone: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // A run this tab started just finished. Reject/archive remove the card, so we
-  // navigate home on close; the rest re-read the card in place.
+  // go back to the board (the inline RunLog can't show output for a card that no
+  // longer exists); the rest re-read the card in place and the inline RunLog
+  // shows the agent's final message.
   const onFinish = useCallback(
     (run: RunView, started: StartedRun) => {
-      const gone = started.removes && !!run.ok;
-      setResult({ label: started.label, res: runToResult(run), gone });
-      if (!gone) router.refresh();
+      if (started.removes && run.ok) router.push("/");
+      else router.refresh();
     },
     [router],
   );
@@ -88,7 +84,6 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
   // Start a non-blocking run. The per-card lock refusal comes back as an error.
   const runAgent = async (req: AgentReq, label: string) => {
     setDialog(null);
-    setResult(null);
     const removes = req.action === "reject" || req.action === "archive";
     const res = await start(req, label, removes);
     if (!res.ok) setError(res.error || "could not start the agent");
@@ -107,12 +102,6 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
     }
     router.refresh();
     return true;
-  };
-
-  const closeResult = () => {
-    const gone = result?.gone;
-    setResult(null);
-    if (gone) router.push("/");
   };
 
   return (
@@ -315,8 +304,6 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
           <Markdown body={card.body} openIds={openIds} />
         </div>
       </main>
-
-      {result && <ResultOverlay result={result} onClose={closeResult} />}
 
       {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} />}
     </div>

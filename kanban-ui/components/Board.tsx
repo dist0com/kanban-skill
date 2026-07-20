@@ -11,14 +11,12 @@ import {
   ActionDialog,
   type AgentReq,
   type DialogState,
-  ResultOverlay,
   RunLogOverlay,
   RUNNING_VERB,
-  type RunResult,
   RunningBadge,
 } from "./agent-shared";
 import { GroupChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
-import { runningRunForCard, runToResult, type StartedRun, useAgentRuns, useRunLog } from "./runs";
+import { runningRunForCard, useAgentRuns, useRunLog } from "./runs";
 
 export function BoardView({
   initialBoard,
@@ -32,8 +30,9 @@ export function BoardView({
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
   const [dialog, setDialog] = useState<DialogState>(null);
-  const [result, setResult] = useState<{ label: string; res: RunResult } | null>(null);
-  // The run whose log is open in the overlay (opened from a running badge).
+  // The run whose log is open in the overlay: opened from a running badge, or
+  // auto-opened when a run this tab started finishes (so its final message and
+  // any error stay visible — the board has no inline run log of its own).
   const [logRunId, setLogRunId] = useState<string | null>(null);
   const openLog = useRunLog(logRunId);
 
@@ -46,9 +45,10 @@ export function BoardView({
     }
   }, []);
 
-  // A run this tab started just finished — show its output.
-  const onFinish = useCallback((run: RunView, started: StartedRun) => {
-    setResult({ label: started.label, res: runToResult(run) });
+  // A run this tab started just finished — open its log so the final message and
+  // any error are shown. useRunLog fetches the terminal run once and stops.
+  const onFinish = useCallback((run: RunView) => {
+    setLogRunId(run.runId);
   }, []);
 
   const { runs, start } = useAgentRuns(onFinish);
@@ -70,7 +70,8 @@ export function BoardView({
   const startRun = useCallback(
     async (req: AgentReq, label: string) => {
       setDialog(null);
-      setResult(null);
+      // Close any finished-run log still open from a previous run.
+      setLogRunId(null);
       const res = await start(req, label);
       if (!res.ok) setError(res.error || "could not start the agent");
     },
@@ -199,8 +200,6 @@ export function BoardView({
           ))}
         </div>
       )}
-
-      {result && <ResultOverlay result={result} onClose={() => setResult(null)} />}
 
       {logRunId && <RunLogOverlay run={openLog} onClose={() => setLogRunId(null)} />}
 

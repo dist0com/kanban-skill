@@ -16,14 +16,6 @@ import { Markdown } from "./Markdown";
 const PULSE_DOT =
   "size-[7px] rounded-full bg-nb-accent-deep animate-[nbPulse_1.1s_ease-in-out_infinite]";
 
-export interface RunResult {
-  ok: boolean;
-  code: number | null;
-  stdout: string;
-  stderr: string;
-  error?: string;
-}
-
 export interface AgentReq {
   action: AgentAction;
   id?: number;
@@ -96,12 +88,6 @@ const MONO_TEXT = {
   fontFamily: "var(--font-mono)",
   fontSize: 12,
 } as const;
-const PROSE_TEXT = {
-  whiteSpace: "pre-wrap",
-  fontFamily: "var(--font-sans)",
-  fontSize: 13.5,
-  lineHeight: 1.65,
-} as const;
 
 // A tailing view of one run's captured output (task #14). Shows the last few KB;
 // auto-scrolls to the newest line unless the user has scrolled up to read back.
@@ -137,7 +123,7 @@ export function RunLog({
   return (
     <div className="nb-outline bg-nb-paper">
       <div
-        className={`flex items-center gap-2.5 px-3 py-1 border-b-[1.5px] border-nb-ink rounded-t-[12.5px] bg-[linear-gradient(var(--color-nb-cream),color-mix(in_srgb,var(--color-nb-ink)_9%,var(--color-nb-cream)))] last:border-b-0 last:rounded-b-[12.5px]${onToggle ? " cursor-pointer select-none" : ""}`}
+        className={`flex items-center gap-2.5 px-3 py-1 rounded-t-[12.5px] bg-[linear-gradient(var(--color-nb-cream),color-mix(in_srgb,var(--color-nb-ink)_9%,var(--color-nb-cream)))]${collapsed ? " rounded-b-[12.5px]" : " border-b-[1.5px] border-nb-ink"}${onToggle ? " cursor-pointer select-none" : ""}`}
         role={onToggle ? "button" : undefined}
         aria-expanded={onToggle ? !collapsed : undefined}
         aria-label={onToggle ? (collapsed ? "Expand run log" : "Collapse run log") : undefined}
@@ -211,40 +197,6 @@ export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: 
         </div>
         <div className="p-4">
           <RunLog run={run} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// The last agent's stdout/stderr, shown after a run finishes.
-export function ResultOverlay({
-  result,
-  onClose,
-}: {
-  result: { label: string; res: RunResult };
-  onClose: () => void;
-}) {
-  return (
-    <div className="nb-scrim" style={{ alignItems: "center" }} onClick={onClose}>
-      <div className="nb-panel" style={{ width: 620, maxWidth: "100%" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: "1.5px solid var(--color-nb-ink)" }}>
-          <h2 className="text-[15px] font-[800]">
-            {result.res.ok ? "✓ " : "✕ "}
-            {result.label}
-          </h2>
-          <button aria-label="Close" className="text-[18px] text-nb-ink-soft hover:text-nb-ink" onClick={onClose}>×</button>
-        </div>
-        <div className="p-5">
-          {result.res.error && (
-            <p className="mb-2 text-[13px]" style={{ color: "var(--color-nb-accent-deep)" }}>{result.res.error}</p>
-          )}
-          <pre className="max-h-[50vh] overflow-auto" style={PROSE_TEXT}>
-            {(result.res.stdout || "").trim() || (result.res.ok ? "(done)" : "")}
-            {result.res.stderr ? (
-              <span style={MONO_TEXT}>{"\n\n[stderr]\n" + result.res.stderr.trim()}</span>
-            ) : null}
-          </pre>
         </div>
       </div>
     </div>
