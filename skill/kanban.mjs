@@ -143,6 +143,49 @@ function locate(id) {
   return null
 }
 
+// If `file` is a subtask nested inside a group task, return that group's root.md
+// (the nearest ancestor folder holding one). Null for a standalone card. Used so
+// archiving a subtask can tick it off in the group's tracking card.
+function enclosingGroupRoot(file) {
+  let dir = path.dirname(file)
+  while (dir.startsWith(TODO) && dir !== TODO) {
+    const root = path.join(dir, 'root.md')
+    if (fs.existsSync(root) && root !== file) return root
+    dir = path.dirname(dir)
+  }
+  return null
+}
+
+// Reflect a subtask's fate in its group's root.md ## Todo. `action` is 'tick' (archive:
+// flip `- [ ] … #id` to `- [x]`) or 'strike' (reject: wrap the item text in ~~…~~, leaving
+// the box). Matches the first bullet whose text references `#id` — `#id\b` keeps #1 from
+// matching #14 — and skips a line already in the target state. Returns true if a line
+// changed, false if there's no matching subtask line to mark.
+function markSubtask(rootFile, id, action) {
+  const lines = fs.readFileSync(rootFile, 'utf8').split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (action === 'tick') {
+      const re = new RegExp(`^(\\s*[-*]\\s*\\[) \\](.*#${id}\\b)`)
+      if (re.test(line)) {
+        lines[i] = line.replace(re, '$1x]$2')
+        fs.writeFileSync(rootFile, lines.join('\n'))
+        return true
+      }
+    } else {
+      // strike: a bullet (with or without a checkbox) referencing #id, not already struck
+      const re = new RegExp(`^(\\s*[-*]\\s+(?:\\[[ xX]\\]\\s+)?)(.*#${id}\\b.*)$`)
+      const m = line.match(re)
+      if (m && !m[2].includes('~~')) {
+        lines[i] = `${m[1]}~~${m[2]}~~`
+        fs.writeFileSync(rootFile, lines.join('\n'))
+        return true
+      }
+    }
+  }
+  return false
+}
+
 // ---- strip README entries --------------------------------------------------
 
 const isTableRow = (line) => /^\s*\|/.test(line)
@@ -708,6 +751,16 @@ function cmdRemove(id, metric) {
   const found = locate(id)
   if (!found) die(`no task with id ${id} under ${rel(TODO)}`)
   const removedRefs = stripReadmeRefs(found)
+  // A subtask's fate is reflected in its group's root.md ## Todo, so the tracking card
+  // stays accurate after the subtask file is gone: archive ticks it done, reject strikes
+  // it out. Warn if the subtask isn't listed there, so the stale checklist gets noticed.
+  const groupRoot = found.kind === 'file' ? enclosingGroupRoot(found.target) : null
+  let marked = null
+  if (groupRoot) {
+    const action = metric === 'completed' ? 'tick' : 'strike'
+    if (markSubtask(groupRoot, id, action)) marked = action
+    else warn(`#${id} isn't listed in ${rel(groupRoot)} ## Todo — nothing to ${action === 'tick' ? 'tick off' : 'strike out'}.`)
+  }
   if (found.kind === 'group') fs.rmSync(found.target, { recursive: true, force: true })
   else fs.rmSync(found.target)
   bumpMetric(metric)
@@ -715,6 +768,7 @@ function cmdRemove(id, metric) {
   console.log(`${metric === 'completed' ? 'archived' : 'rejected'} #${id}: removed ${what}`)
   if (removedRefs.length) console.log(`  dropped ${removedRefs.length} README entry(ies)`)
   else console.log('  no README entry (subtask or untracked)')
+  if (marked) console.log(`  ${marked === 'tick' ? 'ticked' : 'struck'} #${id} in ${rel(groupRoot)}`)
 }
 
 // A recurring task never archives — each run bumps "completed" but the card stays,

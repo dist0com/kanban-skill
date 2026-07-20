@@ -42,6 +42,8 @@ you don't re-suggest something already done.
   back even if you restart the app.
 - A card remembers its stage — implementing or in review — right in the card file, so it still
   shows the stage after you restart the app. If a run dies, the stage resets so it never sticks.
+- You can reopen a card's most recent run log after the run ends and after you restart the app,
+  so you can read back what an agent did. Only the last several runs are kept.
 - A vetted card now shows a `ready` pill, so you can scan the board for what to build next
   instead of re-reading card bodies. A nudge that ends with a concrete plan and no open
   questions marks the card ready; a new open question drops it back to a plain todo.

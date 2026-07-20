@@ -2,19 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FiHelpCircle, FiPlus } from "react-icons/fi";
+import { FiHelpCircle } from "react-icons/fi";
 import { getBoard } from "@/app/actions";
-import type { AgentInfo, Board, RunView } from "@/lib/types";
-import { AgentBadge } from "./AgentBadge";
-import { Button } from "./button";
-import {
-  ActionDialog,
-  type AgentReq,
-  type DialogState,
-  RunLogOverlay,
-  RUNNING_VERB,
-  RunningBadge,
-} from "./agent-shared";
+import type { AgentInfo, Board } from "@/lib/types";
+import { Header } from "./Header";
+import { RunLogOverlay, RUNNING_VERB, RunningBadge } from "./agent-shared";
 import { GroupChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
 import { runningRunForCard, useAgentRuns, useRunLog } from "./runs";
 
@@ -29,10 +21,8 @@ export function BoardView({
 }) {
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
-  const [dialog, setDialog] = useState<DialogState>(null);
-  // The run whose log is open in the overlay: opened from a running badge, or
-  // auto-opened when a run this tab started finishes (so its final message and
-  // any error stay visible — the board has no inline run log of its own).
+  // The run whose log is open in the overlay, opened by clicking a card's running
+  // badge. The board has no inline run log of its own.
   const [logRunId, setLogRunId] = useState<string | null>(null);
   const openLog = useRunLog(logRunId);
 
@@ -45,13 +35,10 @@ export function BoardView({
     }
   }, []);
 
-  // A run this tab started just finished — open its log so the final message and
-  // any error are shown. useRunLog fetches the terminal run once and stops.
-  const onFinish = useCallback((run: RunView) => {
-    setLogRunId(run.runId);
-  }, []);
-
-  const { runs, start } = useAgentRuns(onFinish);
+  // The board starts no runs itself (Create task lives in the header, per-card
+  // actions on the card page), so it only reads the registry — for the per-card
+  // running badges and to refresh when any run finishes.
+  const { runs } = useAgentRuns(() => {});
 
   // Re-read the board whenever any run finishes (from this tab or another), so
   // created/archived/rejected cards appear or disappear without a manual reload.
@@ -64,47 +51,9 @@ export function BoardView({
     if (finished) refresh();
   }, [runs, refresh]);
 
-  const creating = runs.some((r) => r.status === "running" && r.action === "create");
-
-  // Start a non-blocking run. A lock refusal comes back as an error message.
-  const startRun = useCallback(
-    async (req: AgentReq, label: string) => {
-      setDialog(null);
-      // Close any finished-run log still open from a previous run.
-      setLogRunId(null);
-      const res = await start(req, label);
-      if (!res.ok) setError(res.error || "could not start the agent");
-    },
-    [start],
-  );
-
   return (
     <div className="flex min-h-screen flex-col bg-nb-cream">
-      {/* header */}
-      <header
-        className="sticky top-0 z-20 flex items-center justify-between px-6 py-3.5 backdrop-blur-sm"
-        style={{
-          background: "color-mix(in srgb, var(--color-nb-cream) 90%, transparent)",
-          borderBottom: "1.5px solid color-mix(in srgb, var(--color-nb-ink) 14%, transparent)",
-        }}
-      >
-        <div className="flex items-baseline gap-3">
-          <span className="text-[17px] font-[800] tracking-[-0.02em]">🗂️ Kanban board</span>
-          <span className="text-[12px] text-nb-ink-soft">files in docs/kanban/ are the source of truth</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {creating && <RunningBadge label="Creating task" />}
-          <AgentBadge info={agent} />
-          <Button
-            className="gap-1.5"
-            disabled={creating}
-            onClick={() => setDialog({ kind: "create" })}
-          >
-            <FiPlus className="text-[16px]" aria-hidden />
-            Create task
-          </Button>
-        </div>
-      </header>
+      <Header agent={agent} />
 
       {error && (
         <div className="mx-6 mt-4 nb-panel-sm p-3 text-[13px]" style={{ background: "var(--color-nb-peach-soft)" }}>
@@ -202,8 +151,6 @@ export function BoardView({
       )}
 
       {logRunId && <RunLogOverlay run={openLog} onClose={() => setLogRunId(null)} />}
-
-      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={startRun} />}
     </div>
   );
 }

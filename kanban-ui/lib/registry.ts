@@ -106,6 +106,10 @@ interface Run {
   // Re-adopted from disk after a UI restart. We are no longer its parent, so we
   // detect its exit by polling the pid instead of a 'close' event.
   adopted?: boolean;
+  // The run was still going when the UI restarted, then ended out of our sight —
+  // we polled its pid, so we never learned the exit code. Shown as finished with
+  // no pass/fail mark (task #14): don't guess an outcome we never saw.
+  outcomeUnknown?: boolean;
 }
 
 interface RegistryState {
@@ -146,9 +150,26 @@ function pidAlive(pid?: number): boolean {
   }
 }
 
-// Write the live runs (pid + identity) so a restart can find them again.
+// The newest finished run on each card whose log file still exists — the durable
+// "last run log" slot the UI re-opens after a restart (task #14). One per card,
+// no history (a run list was rejected). A record whose log has been pruned is
+// left out, so the button never comes back onto a missing file (task #14).
+function lastFinishedByCard(s: RegistryState): Run[] {
+  const byCard = new Map<number, Run>();
+  for (const r of s.runs.values()) {
+    if (r.status === "running" || r.cardId === null) continue;
+    if (!fs.existsSync(r.logPath)) continue; // log pruned — don't persist a dead pointer
+    const cur = byCard.get(r.cardId);
+    if (!cur || r.startedAt > cur.startedAt) byCard.set(r.cardId, r);
+  }
+  return [...byCard.values()];
+}
+
+// Write the registry so a restart can find it again: the live runs (pid +
+// identity) that must be re-adopted, and each card's last finished run so its
+// "show last run log" button survives (task #14).
 function persist(s: RegistryState): void {
-  const data = [...s.runs.values()]
+  const live = [...s.runs.values()]
     .filter((r) => r.status === "running" && r.pid)
     .map((r) => ({
       runId: r.runId,
@@ -159,17 +180,32 @@ function persist(s: RegistryState): void {
       logPath: r.logPath,
       priorStatus: r.priorStatus,
     }));
+  const finished = lastFinishedByCard(s).map((r) => ({
+    runId: r.runId,
+    cardId: r.cardId,
+    action: r.action,
+    status: r.status,
+    startedAt: r.startedAt,
+    endedAt: r.endedAt,
+    ok: r.ok,
+    code: r.code,
+    error: r.error,
+    logPath: r.logPath,
+    outcomeUnknown: r.outcomeUnknown,
+  }));
   try {
     fs.mkdirSync(kanbanDir(), { recursive: true });
-    fs.writeFileSync(runsFile(), JSON.stringify(data, null, 2));
+    fs.writeFileSync(runsFile(), JSON.stringify({ live, finished }, null, 2));
   } catch {
     // best-effort: a failed write just means a restart forgets a run
   }
 }
 
-// On start-up, re-read the saved runs. A pid still alive → put the run back so
-// the card keeps its running badge and a second run can't start on it. A dead
-// pid → drop it (task #13 will reset that card's stale stage).
+// On start-up, re-read the saved runs. A live run whose pid is still alive → put
+// it back so the card keeps its running badge and a second run can't start on it
+// (a dead pid is dropped; task #13 resets that card's stale stage). Each saved
+// finished run whose log file still exists → put it back so its "show last run
+// log" button re-opens the file (task #14); a pruned log is skipped.
 function adoptFromDisk(s: RegistryState): void {
   let data: unknown;
   try {
@@ -177,8 +213,11 @@ function adoptFromDisk(s: RegistryState): void {
   } catch {
     return;
   }
-  if (!Array.isArray(data)) return;
-  for (const d of data) {
+  // Back-compat: an older UI wrote a bare array of live runs.
+  const live = Array.isArray(data) ? data : (data as { live?: unknown[] })?.live;
+  const finished = Array.isArray(data) ? [] : (data as { finished?: unknown[] })?.finished;
+
+  for (const d of (Array.isArray(live) ? live : []) as any[]) {
     if (!d || typeof d.runId !== "string" || !pidAlive(d.pid)) continue;
     s.runs.set(d.runId, {
       runId: d.runId,
@@ -193,6 +232,28 @@ function adoptFromDisk(s: RegistryState): void {
       adopted: true,
     });
   }
+
+  for (const d of (Array.isArray(finished) ? finished : []) as any[]) {
+    if (!d || typeof d.runId !== "string" || s.runs.has(d.runId)) continue;
+    const logPath = typeof d.logPath === "string" ? d.logPath : "";
+    if (!logPath || !fs.existsSync(logPath)) continue; // log pruned — drop the record
+    s.runs.set(d.runId, {
+      runId: d.runId,
+      cardId: typeof d.cardId === "number" ? d.cardId : null,
+      action: d.action,
+      status: d.status === "error" ? "error" : "done",
+      startedAt: d.startedAt || Date.now(),
+      endedAt: typeof d.endedAt === "number" ? d.endedAt : undefined,
+      ok: typeof d.ok === "boolean" ? d.ok : undefined,
+      code: d.code ?? null,
+      error: typeof d.error === "string" ? d.error : undefined,
+      // No in-memory tail/result survives a restart — getRun() reads the log file.
+      tail: "",
+      logPath,
+      outcomeUnknown: d.outcomeUnknown === true,
+    });
+  }
+
   persist(s); // rewrite without the dead ones
 }
 
@@ -224,6 +285,7 @@ function reapAdopted(s: RegistryState): void {
     if (r.status === "running" && r.adopted && !pidAlive(r.pid)) {
       r.status = "done";
       r.code = null; // exit code is unknown across a restart
+      r.outcomeUnknown = true; // finished out of our sight — no pass/fail to show
       r.endedAt = Date.now();
       clearRunStatus(r);
       changed = true;
@@ -450,8 +512,10 @@ function finish(
   if (res.error) run.error = res.error;
   run.endedAt = Date.now();
   clearRunStatus(run);
-  persist(s);
+  // Prune old logs first, then persist — so the saved "last run log" records
+  // only ever point at files that still exist (task #14).
   pruneLogs();
+  persist(s);
   pruneMemory(s);
 }
 
@@ -468,6 +532,9 @@ function toView(r: Run, withTail: boolean): RunView {
     ok: r.ok,
     code: r.code,
     error: r.error,
+    // Terminal run whose exit we never saw (it outlived a UI restart) — the UI
+    // shows it as finished with no pass/fail mark.
+    outcomeUnknown: r.status !== "running" ? r.outcomeUnknown : undefined,
     // The agent's final message — terminal runs only; a live run has none yet.
     result: r.status !== "running" ? r.result : undefined,
     // Only terminal runs carry their tail here (the result overlay reads it);

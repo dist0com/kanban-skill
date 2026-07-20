@@ -96,6 +96,10 @@ export interface RunView {
   code?: number | null;
   /** Spawn/child error message, if any. */
   error?: string;
+  /** Terminal run whose exit code we never learned — it was still running when
+   *  the UI restarted and finished out of our sight. Shown as finished with no
+   *  pass/fail mark: don't guess an outcome we never saw. */
+  outcomeUnknown?: boolean;
   /** The agent's final message, parsed from its event stream. Terminal runs
    *  only. When present the UI leads with it and folds the event tail away;
    *  absent (custom agent command, or a run re-adopted after a UI restart)

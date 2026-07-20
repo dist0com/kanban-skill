@@ -38,7 +38,10 @@ export const boardRows: { say: string; does: string }[] = [
 export const uiActions: { icon: string; label: string; body: string }[] = [
   { icon: "🔨", label: "Implement", body: "hand the card to Claude to build" },
   { icon: "✏️", label: "Edit", body: "revise the card, don't run it" },
-  { icon: "📦", label: "Archive", body: "sweep a finished card away" },
+  { icon: "📈", label: "Nudge", body: "push a stuck card one step on" },
+  { icon: "❓", label: "Resolve", body: "answer the card's open questions" },
+  { icon: "📦", label: "Archive", body: "file a finished card away" },
+  { icon: "❌", label: "Reject", body: "drop a card and note why" },
 ];
 
 // Recurring-task automation ladder: each run pushes a step up a rung.

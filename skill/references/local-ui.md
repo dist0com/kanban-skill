@@ -79,8 +79,12 @@ tails live while the agent works — every step shows as it happens, each tool c
 message, so you can catch a wrong turn early. On the board, clicking a card's running badge
 opens the same log in a pop-up. When a run ends the log leads with the agent's final message;
 the step-by-step events fold away under an "intermediate events" row, one click to expand.
-Each run's output is saved to disk, so a past run can still be read back after a UI restart.
-The page shows only the last few KB; the full log is in the file. Watching is read-only: you
+Each card's last finished run is saved to disk, so its "show last run log" button comes back
+after a UI restart and re-opens the same output. A run that was still going when the UI
+restarted shows as finished with no pass/fail mark — its exit went unseen, so the UI doesn't
+guess one. Only the last 20 logs are kept; once a run's log ages out, its button drops too, so
+it never opens onto nothing. The page shows only the last few KB; the full log is in the file.
+Watching is read-only: you
 can't reply to a live run — anything the agent needs from you it leaves as an open question
 on the card. (The live step stream needs the default `claude` agent; a custom command's log
 shows whatever that command prints.)

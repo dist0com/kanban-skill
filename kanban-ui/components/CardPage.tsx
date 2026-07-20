@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   FiArchive,
-  FiArrowLeft,
   FiChevronRight,
   FiCornerLeftUp,
   FiEdit2,
@@ -17,8 +16,8 @@ import {
 import { patchCardAction } from "@/app/actions";
 import type { CardPatch } from "@/lib/edit";
 import type { AgentInfo, Card, RunView } from "@/lib/types";
-import { AgentBadge } from "./AgentBadge";
 import { Button } from "./button";
+import { Header } from "./Header";
 import {
   ActionDialog,
   type AgentReq,
@@ -106,20 +105,7 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
 
   return (
     <div className="flex min-h-screen flex-col bg-nb-cream">
-      {/* header — back to the board */}
-      <header
-        className="sticky top-0 z-20 flex items-center justify-between px-6 py-3.5 backdrop-blur-sm"
-        style={{
-          background: "color-mix(in srgb, var(--color-nb-cream) 90%, transparent)",
-          borderBottom: "1.5px solid color-mix(in srgb, var(--color-nb-ink) 14%, transparent)",
-        }}
-      >
-        <Link href="/" className="inline-flex items-center gap-2 text-[14px] font-[700] hover:text-nb-accent-deep">
-          <FiArrowLeft className="text-[16px]" aria-hidden />
-          Kanban board
-        </Link>
-        <AgentBadge info={agent} />
-      </header>
+      <Header agent={agent} />
 
       <main className="mx-auto w-full max-w-[840px] px-6 py-6">
         {error && (

@@ -51,18 +51,6 @@ export function BoardUI() {
           ))}
         </ul>
       </div>
-
-      {/* Roadmap teaser — where the buttons are heading. */}
-      <div className={`${panelStatic} mt-6 flex items-start gap-3 bg-code p-5`}>
-        <span className="text-lg" aria-hidden="true">
-          🧭
-        </span>
-        <p className="text-[0.95rem] text-muted">
-          <span className="font-semibold text-ink">Coming next:</span>{" "}
-          auto research, review, and implement — cards move themselves through the
-          board so you steer the exceptions instead of nudging every task by hand.
-        </p>
-      </div>
     </section>
   );
 }

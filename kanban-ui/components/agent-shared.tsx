@@ -117,8 +117,11 @@ export function RunLog({
 
   if (!run) return null;
   const running = run.status === "running";
+  // A run that outlived a UI restart finished out of our sight: show it as done
+  // with no pass/fail mark — don't guess an outcome we never saw.
+  const unknown = !running && run.outcomeUnknown;
   // No word while running — the pulse dot already signals progress.
-  const state = running ? "" : run.ok ? "done" : `exited ${run.code ?? "?"}`;
+  const state = running ? "" : unknown ? "finished" : run.ok ? "done" : `exited ${run.code ?? "?"}`;
 
   return (
     <div className="nb-outline bg-nb-paper">
@@ -133,6 +136,9 @@ export function RunLog({
         <span className="ml-auto flex items-center gap-1.5">
           {running ? (
             <span className={PULSE_DOT} aria-hidden />
+          ) : unknown ? (
+            // Neutral dot — finished, but outcome unknown, so no ✓/✕.
+            <span aria-hidden style={{ color: "var(--color-nb-ink-soft)" }}>•</span>
           ) : (
             <span aria-hidden style={{ color: "var(--color-nb-accent-deep)" }}>{run.ok ? "✓" : "✕"}</span>
           )}
