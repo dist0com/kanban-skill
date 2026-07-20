@@ -41,13 +41,31 @@ function OpenAiMark({ className = "h-6 w-6" }: { className?: string }) {
 
 // Brand-colored marks: Anthropic's coral for Claude Code; the OpenAI and
 // Cursor marks are white-on-dark by their own brand guides; OpenClaw and
-// Hermes ship their own colors as image assets.
-const AGENTS: { name: string; icon: ReactNode }[] = [
-  { name: "Claude Code", icon: <SiClaudecode className="h-6 w-6 text-[#D97757]" /> },
-  { name: "Codex", icon: <OpenAiMark className="h-6 w-6 text-white" /> },
-  { name: "Cursor", icon: <SiCursor className="h-6 w-6 text-white" /> },
-  { name: "OpenClaw", icon: <OpenClawMark className="h-6 w-6" /> },
-  { name: "Hermes", icon: <HermesMark className="h-6 w-6" /> },
+// Hermes ship their own colors as image assets. Each icon is a render fn so the
+// matrix can size it big (h-6) and the mobile chips small (h-4) from one source.
+const AGENTS: { name: string; icon: (className: string) => ReactNode }[] = [
+  { name: "Claude Code", icon: (c) => <SiClaudecode className={`${c} text-[#D97757]`} /> },
+  { name: "Codex", icon: (c) => <OpenAiMark className={`${c} text-white`} /> },
+  { name: "Cursor", icon: (c) => <SiCursor className={`${c} text-white`} /> },
+  { name: "OpenClaw", icon: (c) => <OpenClawMark className={c} /> },
+  { name: "Hermes", icon: (c) => <HermesMark className={c} /> },
+];
+
+// The two boards, as data — desktop renders them as matrix rows, mobile as
+// stacked chip groups, but the support rule lives in one place either way.
+const BOARDS: {
+  tag: ReactNode;
+  label: string;
+  sub: string;
+  supports: (name: string) => boolean;
+}[] = [
+  { tag: "🗂️", label: "Kanban skill", sub: "any file-reading agent", supports: () => true },
+  {
+    tag: <HermesMark className="h-4 w-4" />,
+    label: "Hermes Kanban",
+    sub: "Hermes only",
+    supports: (name) => name === "Hermes",
+  },
 ];
 
 const GRID = "grid grid-cols-[minmax(5.5rem,1.3fr)_repeat(5,1fr)] items-center";
@@ -68,17 +86,7 @@ function Mark({ supported }: { supported: boolean }) {
   );
 }
 
-function BoardRow({
-  tag,
-  label,
-  sub,
-  supports,
-}: {
-  tag: ReactNode;
-  label: string;
-  sub: string;
-  supports: (name: string) => boolean;
-}) {
+function BoardRow({ tag, label, sub, supports }: (typeof BOARDS)[number]) {
   return (
     <div className={`${GRID} px-2 py-3.5 sm:px-4`}>
       <div className="pr-2">
@@ -99,6 +107,47 @@ function BoardRow({
   );
 }
 
+// Mobile view: agents don't fit as six columns on a phone, so each board
+// becomes a heading plus a wrap of agent chips — green + check when supported,
+// dimmed + cross when not. The skill's all-green vs. Hermes Kanban's lone-green
+// carries the same one-difference argument the matrix makes.
+function BoardChips({ tag, label, sub, supports }: (typeof BOARDS)[number]) {
+  return (
+    <div className="px-3 py-4">
+      <div className="flex flex-wrap items-baseline gap-x-1.5">
+        <span className="text-sm" aria-hidden="true">
+          {tag}
+        </span>
+        <span className="text-sm font-semibold text-ink">{label}</span>
+        <span className="text-xs text-muted">· {sub}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {AGENTS.map((a) => {
+          const ok = supports(a.name);
+          return (
+            <span
+              key={a.name}
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs ${
+                ok
+                  ? "border-growth/30 bg-growth/10 text-ink"
+                  : "border-border bg-code text-muted opacity-70"
+              }`}
+            >
+              {a.icon("h-4 w-4")}
+              <span>{a.name}</span>
+              {ok ? (
+                <FiCheck className="h-3.5 w-3.5 text-growth" aria-label="supported" />
+              ) : (
+                <FiX className="h-3.5 w-3.5 text-[#f85149]/60" aria-label="not supported" />
+              )}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function HkHarness() {
   return (
     <section className="mt-24">
@@ -112,32 +161,31 @@ export function HkHarness() {
         tools, so only Hermes can.
       </p>
 
-      <div className={`${panelStatic} mt-6 divide-y-2 divide-border overflow-hidden`}>
-        {/* logo header row */}
-        <div className={`${GRID} bg-code px-2 py-4 sm:px-4`}>
-          <div />
-          {AGENTS.map((a) => (
-            <div key={a.name} className="flex flex-col items-center gap-1.5">
-              {a.icon}
-              <span className="text-center text-[0.7rem] font-medium leading-tight text-muted">
-                {a.name}
-              </span>
-            </div>
+      <div className={`${panelStatic} mt-6 overflow-hidden`}>
+        {/* Matrix — aligned columns land only where there's room for six of them. */}
+        <div className="hidden divide-y-2 divide-border sm:block">
+          <div className={`${GRID} bg-code px-2 py-4 sm:px-4`}>
+            <div />
+            {AGENTS.map((a) => (
+              <div key={a.name} className="flex flex-col items-center gap-1.5">
+                {a.icon("h-6 w-6")}
+                <span className="text-center text-[0.7rem] font-medium leading-tight text-muted">
+                  {a.name}
+                </span>
+              </div>
+            ))}
+          </div>
+          {BOARDS.map((b) => (
+            <BoardRow key={b.label} {...b} />
           ))}
         </div>
 
-        <BoardRow
-          tag="🗂️"
-          label="Kanban skill"
-          sub="any file-reading agent"
-          supports={() => true}
-        />
-        <BoardRow
-          tag={<HermesMark className="h-4 w-4" />}
-          label="Hermes Kanban"
-          sub="Hermes only"
-          supports={(name) => name === "Hermes"}
-        />
+        {/* Phone — stacked chip groups, one per board. */}
+        <div className="divide-y-2 divide-border sm:hidden">
+          {BOARDS.map((b) => (
+            <BoardChips key={b.label} {...b} />
+          ))}
+        </div>
       </div>
 
       <p className="mt-3 text-sm text-muted">

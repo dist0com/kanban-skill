@@ -51,6 +51,9 @@ you don't re-suggest something already done.
   a short notice and sends you back to the board after a few seconds, instead of a dead 404.
 - A group task shows as one card on the board (never a card per subtask). Its page lists
   the subtasks as links with todo progress, and each subtask page links back up to the root.
+- An archive icon in the header opens one place to browse every agent run — live and past,
+  across all cards and actions. It shows the run's input and full log side by side, badges a
+  count while runs are live, and keeps the last 30 runs even after you restart the app.
 
 ## Distribution
 

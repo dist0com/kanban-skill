@@ -109,29 +109,9 @@ body {
 
 /* --- Board-specific bits built from the same language --------------------- */
 
-/* Header agent indicator — a quiet, clickable status pill. Outlined like the
-   design's controls but softer than a CTA, since it opens info rather than
-   firing an action. */
-.nb-agent {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1.5px solid color-mix(in srgb, var(--color-nb-ink) 20%, transparent);
-  border-radius: 9px;
-  background: var(--color-nb-paper);
-  padding: 6px 11px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-nb-ink-soft);
-  cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
-}
-.nb-agent:hover {
-  color: var(--color-nb-ink);
-  border-color: color-mix(in srgb, var(--color-nb-ink) 40%, transparent);
-  background: var(--color-nb-wash);
-}
+/* The header's agent indicator and Runs button are a matched pair of quiet
+   outlined controls built from Tailwind utilities inline in their components
+   (AgentBadge / runs.tsx) — no shared class here. */
 
 /* Borderless meaning chip (track / priority / roi) */
 .nb-chip {
@@ -212,20 +192,8 @@ body {
   pointer-events: none;
 }
 
-/* Text input / textarea in dialogs */
-.nb-input {
-  width: 100%;
-  border: 1.5px solid var(--color-nb-ink);
-  border-radius: 10px;
-  background: var(--color-nb-paper);
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--color-nb-ink);
-}
-.nb-input:focus {
-  outline: 2px solid var(--color-nb-accent);
-  outline-offset: 1px;
-}
+/* The dialog textarea now lives as Tailwind utilities in
+   components/agent-shared.tsx (INPUT) — colocated with the dialogs that use it. */
 
 /* Rendered markdown card body (`.nb-md`, `.nb-idlink`, `.nb-runlog-md`) lives in
    ./markdown.css — imported alongside this file in app/layout.tsx. */

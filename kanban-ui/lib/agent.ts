@@ -99,6 +99,7 @@ export function buildPrompt(req: AgentRequest): string {
       return [
         `/kanban. Add task(s) from this requirement: "${req.description || ""}".`,
         `Follow the skill's add-task flow. Create task only, don't implement it.`,
+        `Don't ask me questions with human-in-the-loop. Leave any questions as open questions.`,
       ].join(" ");
     case "nudge":
       return [

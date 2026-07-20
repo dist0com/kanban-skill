@@ -82,12 +82,21 @@ the step-by-step events fold away under an "intermediate events" row, one click 
 Each card's last finished run is saved to disk, so its "show last run log" button comes back
 after a UI restart and re-opens the same output. A run that was still going when the UI
 restarted shows as finished with no pass/fail mark — its exit went unseen, so the UI doesn't
-guess one. Only the last 20 logs are kept; once a run's log ages out, its button drops too, so
-it never opens onto nothing. The page shows only the last few KB; the full log is in the file.
-Watching is read-only: you
-can't reply to a live run — anything the agent needs from you it leaves as an open question
-on the card. (The live step stream needs the default `claude` agent; a custom command's log
-shows whatever that command prints.)
+guess one. The page shows only the last few KB; the full log is in the file. Watching is
+read-only: you can't reply to a live run — anything the agent needs from you it leaves as an
+open question on the card. (The live step stream needs the default `claude` agent; a custom
+command's log shows whatever that command prints.)
+
+**The runs panel.** The archive icon in the header is the one place to browse *every* run —
+live and past, across every card and every action, not just one card. While agents are working
+the icon wears a small count badge with a pulse. Click it to open a two-pane history: the run
+list on the left (each row shows the action, its card `#`, a status dot, and when it started,
+newest first), and on the right the run you pick — the text you typed for it (the create
+description, an action's notes, or the reject reason) above its log. A create has no card page
+of its own, so this panel is its home: starting a create opens the panel on it, and it stays
+here to reopen after it finishes. The last 30 runs are kept; older ones age out (their logs
+too), so the list never points at a log that's already gone. Per card the page still shows only
+that card's own most recent run — the panel is the global view.
 
 ## The saved stage
 

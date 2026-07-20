@@ -91,6 +91,10 @@ export interface RunView {
   status: "running" | "done" | "error";
   startedAt: number;
   endedAt?: number;
+  /** The text the user typed for this run — a create's description, an action's
+   *  notes, or a reject's reason. Shown in the global runs panel (#21); absent
+   *  when the run carried no note. */
+  input?: string;
   /** Exit was clean. Set once the run reaches a terminal state. */
   ok?: boolean;
   code?: number | null;
@@ -105,6 +109,10 @@ export interface RunView {
    *  absent (custom agent command, or a run re-adopted after a UI restart)
    *  the tail is all there is. */
   result?: string;
+  /** Claude Code's session id for this run. Lets the UI copy a handoff id so the
+   *  conversation can be resumed in claude code (`claude --resume <id>`). Absent
+   *  for a custom (non-claude) command that emits no session id. */
+  sessionId?: string;
   /** Tail of the run's output (last few KB). The board-wide poll attaches it
    *  only to terminal runs; getRun() attaches it for any run — live or done —
    *  by reading the log file, so the UI can tail a running agent. */

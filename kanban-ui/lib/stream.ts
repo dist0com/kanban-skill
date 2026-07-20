@@ -17,6 +17,10 @@ export interface StreamRenderer {
   flush(): string;
   /** The agent's final message, once the `result` event has arrived. */
   result(): string | undefined;
+  /** Claude Code's session id, carried on every stream-json event. Lets the UI
+   *  offer a "resume this run in claude code" handoff (`claude --resume <id>`).
+   *  Undefined for a custom (non-claude) command that emits no session id. */
+  sessionId(): string | undefined;
 }
 
 // One short hint per tool call: the argument a human would recognize the call
@@ -35,6 +39,7 @@ function toolHint(input: unknown): string {
 export function createStreamRenderer(): StreamRenderer {
   let buf = "";
   let final: string | undefined;
+  let session: string | undefined;
 
   const renderLine = (line: string): string => {
     if (!line.trim()) return "";
@@ -46,6 +51,9 @@ export function createStreamRenderer(): StreamRenderer {
     } catch {
       return line + "\n";
     }
+    // Every claude stream-json event carries the session id (the `system` init
+    // event first). Capture it so a run can be resumed in claude code.
+    if (typeof ev.session_id === "string" && ev.session_id) session = ev.session_id;
     switch (ev.type) {
       case "assistant": {
         const msg = ev.message as { content?: unknown } | undefined;
@@ -83,5 +91,6 @@ export function createStreamRenderer(): StreamRenderer {
       return rest ? renderLine(rest) : "";
     },
     result: () => final,
+    sessionId: () => session,
   };
 }

@@ -19,6 +19,9 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
   or a restart) → ✅ the log is a place, not a moment: the card's most recent run stays
   openable after the run ends and after a restart. One run is enough — a per-card run
   history list is overdesign.
+- ❌ **Browse every past run from a card page** (per-card history list) → ✅ per-card stays
+  one run, but there's ONE global runs panel in the header (an archive icon) to browse all
+  runs — live and past, every action and card — showing each run's input + log. Keep 30.
 
 ## Card format
 

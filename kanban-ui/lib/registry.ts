@@ -23,6 +23,15 @@ import type { AgentAction, CardStatus, RunView } from "./types";
 // each other even on different cards — so these serialize behind one lock.
 const INDEX_ACTIONS = new Set<AgentAction>(["create", "archive", "reject"]);
 
+// Actions that may run only one at a time across the whole board. A create has
+// no card yet, so the per-card lock can't catch a duplicate — and the registry
+// is shared by every tab (one UI server = one process), so this refuses a second
+// create instead of silently queuing it behind the index lock. Survives a UI
+// restart too: an in-flight create is re-adopted as a running run before the
+// guard checks. This is the "single global create" rule — no separate lock file
+// needed, the registry (persisted to .runs.json) is already the source of truth.
+const SINGLETON_ACTIONS = new Set<AgentAction>(["create"]);
+
 // Past-tense verb for the "already running" message, e.g. "#5 is already being
 // implemented".
 const VERB: Record<AgentAction, string> = {
@@ -74,10 +83,17 @@ function clearRunStatus(run: Run): void {
   setCardStatus(run.cardId, restore);
 }
 
-const KEEP_LOGS = 20; // how many run logs to keep on disk
-const KEEP_RUNS = 40; // how many finished runs to keep in memory
+const KEEP_LOGS = 30; // how many run logs to keep on disk
+const KEEP_RUNS = 30; // how many finished runs to keep in memory (and persisted)
 const TAIL_MAX = 8000; // chars of output kept per run (in memory)
 const TAIL_BYTES = 16 * 1024; // last few KB of the log read from disk for the UI
+
+// A sentinel line written into the log just before the agent's final message, so
+// a run re-adopted after a UI restart (whose parsed `result` didn't survive in
+// memory) can still split the durable log back into events + final message —
+// letting the UI fold the events away exactly as it does for an in-session run.
+// The events are rendered tool/turn lines, so this bracketed token won't collide.
+const RESULT_MARKER = "<<<kanban:result>>>";
 
 interface Run {
   runId: string;
@@ -87,6 +103,10 @@ interface Run {
   startedAt: number;
   endedAt?: number;
   pid?: number;
+  // The text the user typed for this run — a create's description, an action's
+  // notes, or a reject's reason. The request object is gone once the run starts,
+  // so we keep it here (and persist it) for the global runs panel to show (#21).
+  input?: string;
   ok?: boolean;
   code?: number | null;
   error?: string;
@@ -96,6 +116,10 @@ interface Run {
   // folds the tail away. Unset for a custom (non-streaming) command or a run
   // re-adopted after a restart; the tail is all there is in those cases.
   result?: string;
+  // Claude Code's session id, read off the event stream (first `system` event).
+  // Persisted so the UI's "resume in claude code" handoff survives a restart.
+  // Unset for a custom (non-claude) command that emits no session id.
+  sessionId?: string;
   logPath: string;
   // The card's saved stage the instant before this run overwrote it with
   // `implementing`. Restored when the run ends, so a run on a `ready` card leaves
@@ -150,24 +174,21 @@ function pidAlive(pid?: number): boolean {
   }
 }
 
-// The newest finished run on each card whose log file still exists — the durable
-// "last run log" slot the UI re-opens after a restart (task #14). One per card,
-// no history (a run list was rejected). A record whose log has been pruned is
-// left out, so the button never comes back onto a missing file (task #14).
-function lastFinishedByCard(s: RegistryState): Run[] {
-  const byCard = new Map<number, Run>();
-  for (const r of s.runs.values()) {
-    if (r.status === "running" || r.cardId === null) continue;
-    if (!fs.existsSync(r.logPath)) continue; // log pruned — don't persist a dead pointer
-    const cur = byCard.get(r.cardId);
-    if (!cur || r.startedAt > cur.startedAt) byCard.set(r.cardId, r);
-  }
-  return [...byCard.values()];
+// The finished runs to persist so both a card's "show last run log" button (#14)
+// and the global runs panel (#21) survive a UI restart: the newest KEEP_RUNS
+// finished runs whose log file still exists (a pruned log would be a dead
+// pointer). Unlike the old one-per-card slot, this keeps a card-less create too,
+// so the panel's history list survives a restart in full.
+function recentFinished(s: RegistryState): Run[] {
+  return [...s.runs.values()]
+    .filter((r) => r.status !== "running" && fs.existsSync(r.logPath))
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .slice(0, KEEP_RUNS);
 }
 
 // Write the registry so a restart can find it again: the live runs (pid +
-// identity) that must be re-adopted, and each card's last finished run so its
-// "show last run log" button survives (task #14).
+// identity) that must be re-adopted, and the newest finished runs so the card's
+// "show last run log" button (#14) and the global runs panel (#21) survive.
 function persist(s: RegistryState): void {
   const live = [...s.runs.values()]
     .filter((r) => r.status === "running" && r.pid)
@@ -177,16 +198,20 @@ function persist(s: RegistryState): void {
       action: r.action,
       pid: r.pid,
       startedAt: r.startedAt,
+      input: r.input,
+      sessionId: r.sessionId,
       logPath: r.logPath,
       priorStatus: r.priorStatus,
     }));
-  const finished = lastFinishedByCard(s).map((r) => ({
+  const finished = recentFinished(s).map((r) => ({
     runId: r.runId,
     cardId: r.cardId,
     action: r.action,
     status: r.status,
     startedAt: r.startedAt,
     endedAt: r.endedAt,
+    input: r.input,
+    sessionId: r.sessionId,
     ok: r.ok,
     code: r.code,
     error: r.error,
@@ -226,6 +251,8 @@ function adoptFromDisk(s: RegistryState): void {
       status: "running",
       startedAt: d.startedAt || Date.now(),
       pid: d.pid,
+      input: typeof d.input === "string" ? d.input : undefined,
+      sessionId: typeof d.sessionId === "string" ? d.sessionId : undefined,
       tail: "",
       logPath: d.logPath || path.join(runsDir(), `${d.runId}.log`),
       priorStatus: d.priorStatus,
@@ -244,6 +271,8 @@ function adoptFromDisk(s: RegistryState): void {
       status: d.status === "error" ? "error" : "done",
       startedAt: d.startedAt || Date.now(),
       endedAt: typeof d.endedAt === "number" ? d.endedAt : undefined,
+      input: typeof d.input === "string" ? d.input : undefined,
+      sessionId: typeof d.sessionId === "string" ? d.sessionId : undefined,
       ok: typeof d.ok === "boolean" ? d.ok : undefined,
       code: d.code ?? null,
       error: typeof d.error === "string" ? d.error : undefined,
@@ -334,6 +363,39 @@ function readLogTail(logPath: string, maxBytes = TAIL_BYTES): string | null {
   }
 }
 
+// Split a log tail read from disk into intermediate events + the agent's final
+// message, so a run re-adopted after a restart folds the events away the same as
+// an in-session run. Returns just { tail } when there's no separable message (a
+// live run, or a custom command with no recognizable structure).
+function splitLogResult(logText: string): { tail: string; result?: string } {
+  // Exact path — a run written after the marker landed: everything after the
+  // marker is the final message, everything before it is the events. lastIndexOf
+  // so a marker-like token in the events can't beat the real one appended last.
+  const at = logText.lastIndexOf(RESULT_MARKER);
+  if (at !== -1) {
+    const tail = logText.slice(0, at).replace(/\n+$/, "");
+    const result = logText.slice(at + RESULT_MARKER.length).replace(/^\n+/, "").replace(/\n+$/, "");
+    return { tail, result: result || undefined };
+  }
+  // Fallback for pre-marker (legacy) logs. The renderer wrote every tool call as
+  // a "⏺ …" line, so the closing prose after the LAST tool line is the final
+  // message. The old write appended that message right after its identical
+  // streamed copy, so collapse an exact "X … X" doubling back to a single X.
+  const lines = logText.split("\n");
+  let lastTool = -1;
+  for (let i = 0; i < lines.length; i++) if (lines[i].startsWith("⏺ ")) lastTool = i;
+  if (lastTool === -1) return { tail: logText }; // no tool calls — can't tell events from message
+  const tail = lines.slice(0, lastTool + 1).join("\n").replace(/\n+$/, "");
+  const closing = lines.slice(lastTool + 1).join("\n").trim();
+  if (!closing) return { tail: logText.replace(/\n+$/, "") }; // ended on a tool call — no message to lead with
+  const paras = closing.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  const half = paras.length / 2;
+  let doubled = Number.isInteger(half) && half > 0;
+  for (let i = 0; i < half && doubled; i++) if (paras[i] !== paras[i + half]) doubled = false;
+  const result = (doubled ? paras.slice(0, half) : paras).join("\n\n");
+  return { tail, result: result || undefined };
+}
+
 // Keep only the last KEEP_LOGS run logs on disk; delete older ones.
 function pruneLogs(): void {
   try {
@@ -385,6 +447,15 @@ export interface StartResult {
   error?: string;
 }
 
+// The text the user typed for a run, pulled from whichever request field carries
+// it: create → description, reject → reason, everything else → notes. Trimmed;
+// empty becomes undefined. Stored on the run so the runs panel shows the input
+// alongside the log (#21).
+function runInput(req: AgentRequest): string | undefined {
+  const text = req.description ?? req.reason ?? req.notes ?? "";
+  return text.trim() || undefined;
+}
+
 // Start an agent and return at once — the request never awaits the child. The
 // run is recorded as `running`; the UI polls listRuns() and sees it flip to
 // done/error on close. Enforces the per-card lock here (synchronously) so a
@@ -401,6 +472,16 @@ export function startRun(req: AgentRequest, prompt: string): StartResult {
     }
   }
 
+  // One-at-a-time actions (create): refuse a second while one is live, across all
+  // tabs. The per-card lock above doesn't cover a create — it has no card id yet.
+  if (SINGLETON_ACTIONS.has(req.action)) {
+    for (const r of s.runs.values()) {
+      if (r.status === "running" && r.action === req.action) {
+        return { ok: false, error: `a task is already being ${VERB[req.action]}` };
+      }
+    }
+  }
+
   const runId = randomUUID();
   const run: Run = {
     runId,
@@ -408,6 +489,7 @@ export function startRun(req: AgentRequest, prompt: string): StartResult {
     action: req.action,
     status: "running",
     startedAt: Date.now(),
+    input: runInput(req),
     tail: "",
     logPath: path.join(runsDir(), `${runId}.log`),
   };
@@ -479,7 +561,20 @@ async function launch(s: RegistryState, run: Run, prompt: string): Promise<void>
     log.write(str);
     run.tail = (run.tail + str).slice(-TAIL_MAX);
   };
-  child.stdout.on("data", (d: Buffer) => append(renderer.push(d.toString())));
+  // The session id lands on the first stream event; capture and persist it the
+  // moment it appears so a UI restart mid-run keeps the handoff id (adopted runs
+  // read it back from disk — they never re-parse the stream).
+  const captureSession = () => {
+    const sid = renderer.sessionId();
+    if (sid && sid !== run.sessionId) {
+      run.sessionId = sid;
+      persist(s);
+    }
+  };
+  child.stdout.on("data", (d: Buffer) => {
+    append(renderer.push(d.toString()));
+    captureSession();
+  });
   child.stderr.on("data", (d: Buffer) => append(d.toString()));
   child.on("error", (err) => {
     run.error = String(err);
@@ -487,13 +582,15 @@ async function launch(s: RegistryState, run: Run, prompt: string): Promise<void>
   });
   child.on("close", (code) => {
     append(renderer.flush());
+    captureSession();
     // The final message is kept off the tail (the UI shows it in its own
-    // panel and folds the events away) but written to the log file, so the
-    // file alone is the complete, durable record.
+    // panel and folds the events away) but written to the log file — behind a
+    // marker line — so the file alone is the complete, durable record and a
+    // post-restart read can split events from message again (see getRun).
     const final = renderer.result();
     if (final) {
       run.result = final;
-      log.write(`\n${final}\n`);
+      log.write(`\n${RESULT_MARKER}\n${final}\n`);
     }
     log.end();
     finish(s, run, { ok: code === 0, code });
@@ -529,6 +626,8 @@ function toView(r: Run, withTail: boolean): RunView {
     status: r.status,
     startedAt: r.startedAt,
     endedAt: r.endedAt,
+    input: r.input,
+    sessionId: r.sessionId,
     ok: r.ok,
     code: r.code,
     error: r.error,
@@ -569,7 +668,13 @@ export function getRun(runId: string): RunView | null {
   if (r.status !== "running" && r.result) {
     view.tail = r.tail;
   } else {
-    view.tail = readLogTail(r.logPath) ?? r.tail ?? "";
+    const raw = readLogTail(r.logPath) ?? r.tail ?? "";
+    // A re-adopted finished run lost its parsed `result` across the restart —
+    // recover it from the marker in the log so the UI folds the events away, the
+    // same as an in-session run. A live run has no marker yet, so this is a no-op.
+    const { tail, result } = splitLogResult(raw);
+    view.tail = tail;
+    if (result && r.status !== "running") view.result = result;
   }
   return view;
 }
