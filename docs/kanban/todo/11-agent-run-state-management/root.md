@@ -43,11 +43,11 @@ The running state lives in one browser tab's memory (`CardPage.tsx` `useState`).
 on each other; do them in either order or in parallel.
 
 - **#12 — Run registry + non-blocking runs + locks.** The core. A server-side registry of running agents (shared across tabs), fire-and-return instead of blocking, a per-card lock, and a board-index lock. Fixes multi-task and the duplicate-run race.
-- **#13 — Durable status field.** A saved `status` in the card frontmatter (`todo` / `implementing` / `in-review`) so a stage survives a UI restart. Blocked by #12 — it uses the registry to reset a stale stage.
+- **#13 — Durable status field.** A saved `status` in the card frontmatter (`todo` / `ready` / `implementing`) so a stage survives a UI restart. Blocked by #12 — it uses the registry to reset a stale stage.
 - **#14 — Tail the run log on the UI.** Show each run's captured output in the UI so the user can watch it, not just a "running" label. Blocked by #12. Read-only — the user watches a run, they don't reply to it; the agent raises open questions on the card instead.
 
 ## Todo
 
-- [ ] #12 — run registry, non-blocking runs, per-card and board-index locks.
-- [ ] #13 — durable `status` field in the card format.
-- [ ] #14 — tail the run log on the UI.
+- [x] #12 — run registry, non-blocking runs, per-card and board-index locks.
+- [x] #13 — durable `status` field in the card format.
+- [ ] #14 — tail the run log on the UI (log plumbing done; not yet findable / restart-durable).

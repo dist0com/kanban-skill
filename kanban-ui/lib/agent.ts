@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { repoRoot } from "./paths";
@@ -26,8 +25,20 @@ function resolveCommand(): { command: string; isDefault: boolean } {
   return { command: "claude -p", isDefault: true };
 }
 
-function agentArgv(): string[] {
-  return resolveCommand().command.split(/\s+/).filter(Boolean);
+// The command split into argv (binary + fixed args), ready for spawn. The
+// registry appends the prompt as a final argv entry. Exported so the registry
+// (which owns the running of agents now) shares this one resolution.
+//
+// `claude -p` in its default text mode prints nothing until the run ends, so a
+// live tail would stay empty for the whole run. Ask claude to stream NDJSON
+// events instead (lib/stream.ts renders them into log lines). Only for a
+// claude binary, and never overriding an output format the user configured.
+export function agentArgv(): string[] {
+  const argv = resolveCommand().command.split(/\s+/).filter(Boolean);
+  if (/(^|\/)claude$/.test(argv[0] ?? "") && !argv.includes("--output-format")) {
+    argv.push("--output-format", "stream-json", "--verbose");
+  }
+  return argv;
 }
 
 // What the UI shows for "which agent runs the work". We only support a Claude
@@ -50,7 +61,7 @@ export interface AgentRequest {
   action: AgentAction;
   id?: number;
   title?: string;
-  notes?: string; // implement, edit
+  notes?: string; // implement, edit, nudge, resolve, archive
   reason?: string; // reject
   description?: string; // create
 }
@@ -66,15 +77,6 @@ export function buildPrompt(req: AgentRequest): string {
       ]
         .filter(Boolean)
         .join(" ");
-    case "review":
-      // The skill's own "Review a task" flow archives/rejects and checks card
-      // quality — the opposite of the UI's review. So keep these guardrails.
-      return [
-        `/kanban. Review task ${req.id} ${named}: judge whether the work is really done against the card.`,
-        `Record anything missing or any decision the user still owes as open questions with`,
-        `\`${SCRIPT} update ${req.id} --question "..."\` (repeatable).`,
-        `Only review and raise questions — don't mark it done, and don't implement, archive, or reject it.`,
-      ].join(" ");
     case "reject":
       return [
         `/kanban. Reject task ${req.id} ${named}. Reason: ${req.reason || "(none given)"}.`,
@@ -84,7 +86,10 @@ export function buildPrompt(req: AgentRequest): string {
       return [
         `/kanban. Archive task ${req.id} ${named}.`,
         `Follow the skill's archive flow.`,
-      ].join(" ");
+        req.notes ? `Extra notes: ${req.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
     case "edit":
       return [
         `/kanban. Revise task ${req.id} ${named}: "${req.notes || ""}".`,
@@ -101,8 +106,13 @@ export function buildPrompt(req: AgentRequest): string {
         `Review the card, then rewrite it one stage only — apply the fixes you can decide,`,
         `record decisions you still owe the user as open questions with`,
         `\`${SCRIPT} update ${req.id} --question "..."\` (repeatable), and stop at the code level.`,
+        `If the plan is now concrete and no questions are open, mark it ready with`,
+        `\`${SCRIPT} update ${req.id} --status ready\`.`,
         `Don't implement, archive, or reject it.`,
-      ].join(" ");
+        req.notes ? `Extra notes: ${req.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
     case "resolve":
       return [
         `/kanban. Resolve the open questions on task ${req.id} ${named} following \`references/resolve.md\`.`,
@@ -111,48 +121,13 @@ export function buildPrompt(req: AgentRequest): string {
         `question — the user answers it later, there's no mid-run reply. Clear answered ones with`,
         `\`${SCRIPT} update ${req.id} --clear-questions\` (or re-list only the unanswered with --question).`,
         `Don't implement, archive, or reject it.`,
-      ].join(" ");
+        req.notes ? `Extra notes: ${req.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
   }
 }
 
-export interface AgentResult {
-  ok: boolean;
-  code: number | null;
-  stdout: string;
-  stderr: string;
-}
-
-// Fire the agent in the repo root and wait for it to finish. No streaming and no
-// human-in-the-loop in this version (that's task #9) — the UI shows a plain
-// "running" state and refreshes the board when this resolves.
-export function runAgent(prompt: string): Promise<AgentResult> {
-  const argv = agentArgv();
-  const [cmd, ...args] = argv;
-  return new Promise((resolve) => {
-    const child = spawn(cmd, [...args, prompt], {
-      cwd: repoRoot(),
-      env: process.env,
-      shell: false,
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (d) => {
-      stdout += d.toString();
-    });
-    child.stderr.on("data", (d) => {
-      stderr += d.toString();
-    });
-    child.on("error", (err) => {
-      resolve({ ok: false, code: null, stdout, stderr: stderr + String(err) });
-    });
-    child.on("close", (code) => {
-      // keep the response light — the last chunk is enough to show an outcome
-      resolve({
-        ok: code === 0,
-        code,
-        stdout: stdout.slice(-4000),
-        stderr: stderr.slice(-2000),
-      });
-    });
-  });
-}
+// The agent no longer runs here. `lib/registry.ts` owns spawning: it starts the
+// child, records the run in a shared registry, returns at once, and the UI polls
+// the registry for the outcome. See startRun() there.

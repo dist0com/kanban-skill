@@ -95,44 +95,12 @@ To scaffold a whole card in one step, pass `--title` and `--track` (see "Add a t
 
 ## Propose the next things to do
 
-Generate **3 new tasks** — don't pick from the board. Find work nobody has planned
-yet, read from the user's standpoint: what do users still miss to reach what
-{{PROJECT_NAME}} promises? What trips them up? What keeps the process from being
-streamlined?
-
-Learn from your planning sources. You don't have to read them all in one pass — **loop**,
-a few each time. A source is worth reviewing when it has **changed since you last
-reviewed it** (check `git log` against the watermark in `memory.md`), or when you've
-never reviewed it. Typical sources:
-
-- the codebase — features that are half-built or rough.
-- your roadmap doc (Configuration) — promised direction not yet shipped.
-- your user-facing docs (Configuration) — what you tell users to do; gaps vs. what
-  the product actually does.
-- `docs/kanban/archive.md` — what's already done;
-- `docs/kanban/todo/` — what's undone; Don't repeat it.
-- `docs/kanban/rejected.md` — ideas already turned down; Don't re-propose them.
-- `docs/kanban/memory.md` — what we learned from past loops.
-
-Steps:
-
-1. Pick a few sources that changed since you last reviewed them (or are unreviewed).
-   Record user-standpoint gaps and the new watermark in `memory.md` (below).
-2. From those gaps, propose 3 tasks that are **not** on the board or in `archive.md`.
-3. Never duplicate. If unsure a task is already done, confirm (see `references/add-task.md`, step 2).
-
-### Memory
-
-Keep what you learn in `docs/kanban/memory.md` so the next loop builds on it instead
-of re-reading everything.
-
-- Write from the user's standpoint: the objective, what blocks them, where the
-  process snags.
-- Highly summarized — Delete details. Only maintain the high-level gap between the goal and what's supported.
-- Record a **review watermark** per source — the date you reviewed it at — so the next loop knows what changed and what to skip.
-- Update it as you learn; prune stale notes.
-- Auto-split / merge by length: keep one `memory.md` while it's short. When it grows
-  long, split into `memory/<topic>.md` files. When the pieces shrink, merge back.
+Each loop picks **one focus area** and proposes **3 new tasks inside it** — work nobody
+has planned yet. Ideas come from walking a user story in that area step by step and
+noting every stumble, not from a roadmap. Don't scatter three unrelated ideas; dig one
+area deep so its gap actually closes, and pick a different focus next loop. Keep what you
+learn in `docs/kanban/memory.md` so the next loop builds on it. Full guide in
+`references/propose.md`.
 
 ## Add a task
 
@@ -165,7 +133,9 @@ Take one task and move it one step forward — from vague to concrete. A nudge i
 substeps: **review** the card (missing steps, missed edge cases, over-complication,
 actionability — yielding open questions for the user and revisions you decide
 yourself), then **rewrite** it (push one stage only, apply the revisions, split off
-side ideas, stop at the code level). Full guide in `references/nudge.md`.
+side ideas, stop at the code level). A nudge that ends with a concrete plan and no
+open questions marks the card `ready` — the user scans for the `ready` pill to pick
+what to implement next. Full guide in `references/nudge.md`.
 
 A card with unresolved `questions` in its frontmatter can't be nudged — resolve the
 questions first.
@@ -314,6 +284,7 @@ docs, this step is a no-op.
 
 - your roadmap doc (Configuration) — product direction.
 - your user-facing docs (Configuration) — what you promise and teach users.
+- `references/propose.md` — picking one focus area and proposing the next tasks in it.
 - `references/presets/` — optional bundles that add tracks and reviews for a specific
   kind of project (e.g. `indie-hacker.md`).
 - `references/local-ui.md` — running the local board UI (`kanban-ui/`) and its buttons.

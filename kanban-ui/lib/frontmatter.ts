@@ -3,7 +3,9 @@
 // the script does. The script stays the ONLY writer for id-touching moves; the UI
 // only rewrites these validated fields, and only for cards that already exist.
 
-import type { CardMeta } from "./types";
+import type { CardMeta, CardStatus } from "./types";
+
+const STATUSES: CardStatus[] = ["todo", "ready", "implementing"];
 
 export function yamlScalar(input: unknown): string {
   const s = String(input);
@@ -25,6 +27,7 @@ export function serializeFrontmatter(m: CardMeta): string {
   out.push(`track: ${yamlScalar(m.track)}`);
   out.push(`priority: ${m.priority}`);
   out.push(`roi: ${m.roi}`);
+  out.push(`status: ${STATUSES.includes(m.status) ? m.status : "todo"}`);
   out.push(`blocked_by: [${(m.blocked_by || []).join(", ")}]`);
   out.push(`related: [${(m.related || []).join(", ")}]`);
   if (!m.questions || m.questions.length === 0) out.push("questions: []");
@@ -104,11 +107,15 @@ export function parseFrontmatter(text: string): ParsedCard {
     meta.questions = meta.questions ? [meta.questions] : [];
   }
 
+  const rawStatus = String(meta.status ?? "todo") as CardStatus;
   const normalized: CardMeta = {
     title: String(meta.title ?? ""),
     track: String(meta.track ?? ""),
     priority: String(meta.priority ?? "med"),
     roi: String(meta.roi ?? "med"),
+    // A missing or unknown status reads as `todo`, so cards written before this
+    // field still parse.
+    status: STATUSES.includes(rawStatus) ? rawStatus : "todo",
     blocked_by: (meta.blocked_by as number[]) ?? [],
     related: (meta.related as number[]) ?? [],
     questions: (meta.questions as string[]) ?? [],

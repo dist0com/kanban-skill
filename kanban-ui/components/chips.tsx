@@ -1,6 +1,8 @@
 "use client";
 
-import { FiChevronDown, FiFlag } from "react-icons/fi";
+import { FiCheckCircle, FiChevronDown, FiFlag, FiLayers, FiPlayCircle } from "react-icons/fi";
+import type { IconType } from "react-icons";
+import type { CardStatus } from "@/lib/types";
 
 // Meaning-coded chips + level selects, all built from the design language's
 // borderless pill and quiet select. Priority/roi map onto the signal pastels.
@@ -89,6 +91,61 @@ export function TodoProgress({ done, total, width = 32 }: { done: number; total:
       <span className="text-[11px] font-[700] tabular-nums text-nb-ink-soft">
         {done}/{total}
       </span>
+    </span>
+  );
+}
+
+// The card's saved stage, shown when no agent is running on it (a live run shows
+// the RunningBadge instead — one mark per card, never both). `todo` is the
+// resting default and shows nothing, so the board stays quiet until a card is
+// vetted or in flight. `ready` (mint) marks a vetted card the user can scan for.
+//
+// Each stage carries an icon so the pill reads as a state marker (like the
+// PriorityChip flag), not a stray word, plus a `long` phrase for when it stands
+// alone with room to spare (the card page) vs. the terse `label` used in the
+// board's tight chip row.
+const STATUS: Record<string, { label: string; long: string; icon: IconType; soft: string; ink: string }> = {
+  ready: {
+    label: "ready",
+    long: "Ready to implement",
+    icon: FiCheckCircle,
+    soft: "var(--color-nb-mint-soft)",
+    ink: "var(--color-nb-mint-ink)",
+  },
+  implementing: {
+    label: "implementing",
+    long: "Being implemented",
+    icon: FiPlayCircle,
+    soft: "var(--color-nb-accent-soft)",
+    ink: "var(--color-nb-accent-deep)",
+  },
+};
+
+export function StatusPill({ status, detailed = false }: { status: CardStatus; detailed?: boolean }) {
+  const c = STATUS[status];
+  if (!c) return null; // `todo` — no pill
+  const Icon = c.icon;
+  return (
+    <span className="nb-chip" style={{ background: c.soft, color: c.ink }}>
+      <Icon aria-hidden style={{ width: 11, height: 11, flex: "0 0 auto" }} />
+      {detailed ? c.long : c.label}
+    </span>
+  );
+}
+
+// Group marker — flags a board card as a group root. A layers icon reads as
+// "stacked cards" so the group is obvious at a glance; the progress bar next to
+// it already carries the tally (root todos), so the chip stays a pure marker and
+// names itself on hover instead of stamping a number that competes with the bar.
+export function GroupChip() {
+  return (
+    <span
+      className="nb-chip nb-tip"
+      tabIndex={0}
+      data-tip="Group task — open its page for subtasks"
+      style={{ background: "var(--color-nb-lilac-soft)", color: "var(--color-nb-lilac-ink)" }}
+    >
+      <FiLayers aria-hidden style={{ width: 11, height: 11, flex: "0 0 auto" }} />
     </span>
   );
 }

@@ -4,4 +4,8 @@
 # Per-install version stamp (written by INSTALL/UPDATE prompts, not source)
 skill/.version
 
+# Local UI run registry: live agent runs + their captured logs (task #12)
+docs/kanban/.runs.json
+docs/kanban/.runs/
+
 keyword-research/

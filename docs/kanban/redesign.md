@@ -7,7 +7,7 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
 
 - ❌ **UI lets people hand-edit the board** (toggle todos, write cards, move, mark done) →
   ✅ the UI spawns agents (`claude -p`) to do the kanban work; on-card buttons (Implement,
-  Review, Reject, Archive) call the agent connector. Only priority/roi and a title/body
+  Reject, Archive) call the agent connector. Only priority/roi and a title/body
   Edit are direct.
 - ❌ **UI adds human-in-the-loop / a mid-run reply channel to the agent** → ✅ we don't do
   live replies; the agent raises "open questions" on the card and the user answers those.
@@ -15,10 +15,18 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
 - ❌ **Keep an agent run's output only in memory** → ✅ write each run's full log to a
   gitignored file, so it survives a restart and past runs can be audited. The UI tails
   the file.
+- ❌ **Show a run's log only while it's live** (visible for one moment, gone after the run
+  or a restart) → ✅ the log is a place, not a moment: an always-visible Runs list on each
+  card, with past runs openable after a restart. A feature the user can only reach by
+  catching it live isn't findable.
 
 ## Card format
 
 - ❌ **Meta in bold lines under the title** (`**Track:** ... **Priority:** ...`) → ✅ a
-  markdown frontmatter block (`title`, `track`, `priority`, `roi`, `blocked_by`,
+  markdown frontmatter block (`title`, `track`, `priority`, `roi`, `status`, `blocked_by`,
   `related`, `questions`) so programs can parse and write it. Add `questions` for
   decisions a human still owes.
+- ❌ **A card's stage lives only in the UI's memory** (lost on restart) → ✅ a `status`
+  field in the frontmatter (`todo` / `ready` / `implementing`, default `todo`, a
+  missing value reads as `todo`) so the stage is part of the board's record and survives a
+  UI restart. The script is the only writer, like every other field.

@@ -238,6 +238,17 @@ function validLevel(v, name) {
   if (!LEVELS.includes(v)) die(`--${name} must be one of ${LEVELS.join(' | ')} (got "${v}")`)
 }
 
+// The stages a card can rest in, in order: `todo` (raw), `ready` (plan concrete,
+// no open questions, someone could start now), `implementing`. `reject`/`archive`
+// remove the card, so they are not statuses — a live run's action is tracked in
+// the UI registry, not here. A missing status reads as `todo`, so cards written
+// before this field still parse.
+const STATUSES = ['todo', 'ready', 'implementing']
+
+function validStatus(v) {
+  if (!STATUSES.includes(v)) die(`--status must be one of ${STATUSES.join(' | ')} (got "${v}")`)
+}
+
 function trackNames() {
   return fs
     .readdirSync(TODO, { withFileTypes: true })
@@ -290,6 +301,7 @@ function serializeFrontmatter(m) {
   out.push(`track: ${yamlScalar(m.track)}`)
   out.push(`priority: ${m.priority}`)
   out.push(`roi: ${m.roi}`)
+  out.push(`status: ${STATUSES.includes(m.status) ? m.status : 'todo'}`)
   out.push(`blocked_by: [${(m.blocked_by || []).join(', ')}]`)
   out.push(`related: [${(m.related || []).join(', ')}]`)
   if (!m.questions || m.questions.length === 0) out.push('questions: []')
@@ -495,6 +507,7 @@ function cmdCreate(args) {
     writeNextId(start + count)
     bumpMetric('created', count)
     console.log(ids.join('\n'))
+    reconcileBoard()
     return
   }
 
@@ -521,16 +534,17 @@ function cmdCreate(args) {
   // validation passed → allocate + write
   writeNextId(start + 1)
   bumpMetric('created')
-  const meta = { title, track, priority, roi, blocked_by, related, questions }
+  const meta = { title, track, priority, roi, status: 'todo', blocked_by, related, questions }
   const body = flags['no-body'] ? '' : defaultBody()
   fs.writeFileSync(file, serializeFrontmatter(meta) + '\n\n' + body)
   const indexed = addReadmeRef(track, start, title, fileRel)
   console.log(start)
   console.log(`  wrote ${rel(file)} — frontmatter is set; fill the body with your editor, leave the frontmatter to the script`)
   if (indexed) console.log(`  indexed under "## ${readmeHeadingFor(track)}"`)
+  reconcileBoard()
 }
 
-const UPDATE_FLAGS = ['title', 'track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'clear-questions', 'slug']
+const UPDATE_FLAGS = ['title', 'track', 'priority', 'roi', 'status', 'blocked-by', 'related', 'question', 'clear-questions', 'slug']
 
 // Rewrite a card's frontmatter. Also the sanctioned way to move a card between tracks
 // (--track moves the file + fixes the index) or rename it (--slug). Body is untouched.
@@ -561,6 +575,11 @@ function cmdUpdate(args) {
     meta.roi = String(flags.roi)
     changes.push('roi')
   }
+  if (flags.status !== undefined) {
+    validStatus(String(flags.status))
+    meta.status = String(flags.status)
+    changes.push('status')
+  }
   const ceiling = readNextId()
   if (flags['blocked-by'] !== undefined) {
     meta.blocked_by = parseIdList(flags['blocked-by'], 'blocked-by', ceiling)
@@ -577,6 +596,14 @@ function cmdUpdate(args) {
   if (flags.question !== undefined) {
     meta.questions = (Array.isArray(flags.question) ? flags.question : [flags.question]).map(String)
     changes.push('questions')
+  }
+
+  // A `ready` card has no open questions by definition (see STATUSES). Adding one
+  // means the plan is no longer settled, so drop it back to `todo`. This holds the
+  // invariant no matter who adds the question (nudge review, resolve, the UI).
+  if (meta.questions.length > 0 && meta.status === 'ready') {
+    meta.status = 'todo'
+    changes.push('status→todo (open questions)')
   }
 
   const curRel = path.relative(TODO, file)
@@ -633,6 +660,7 @@ function extractOldMeta(text, file) {
     track,
     priority: norm(grab(/\*\*Priority:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
     roi: norm(grab(/\*\*ROI:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
+    status: 'todo',
     blocked_by: ids(grab(/\*\*Blocked by:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
     related: ids(grab(/\*\*Related:\*\*\s*([^·|\n]+?)\s*(?:·|\||\n|$)/)),
     questions: [],
@@ -720,6 +748,118 @@ function cmdRun(id) {
   bumpMetric('completed')
   console.log(`ran #${id}: +1 completed (card kept — recurring)`)
   console.log('  next: fold this run into the card\'s ## Process; log unrepeatable asks in its open-questions file')
+  reconcileBoard()
+}
+
+// ---- board integrity (run after create/run) --------------------------------
+//
+// A safety net for cards moved, renamed, or removed by hand (Write/Edit/mv instead of
+// the script), which leaves the README index and cross-references stale. It NEVER fails
+// the command — the id was already handed out and the board change already happened, so
+// a broken link must not block it. Warnings go to stderr so `create`'s stdout (the id)
+// stays clean for callers. It does two things:
+//   • repoints a README link whose target file vanished but whose id still has a card
+//     elsewhere on disk (a hand-move/rename) — the only auto-fix, and
+//   • warns about what it can't safely repair: an index entry for an id with no card, a
+//     top-level card with no index entry, or a blocked_by/related pointing at a task
+//     that's no longer on the board.
+function warn(msg) {
+  console.error(`kanban: warning — ${msg}`)
+}
+
+// A README entry links a card as `[#id title](relpath)`. Grab the id and the path.
+const README_LINK = /\[#(\d+)\b[^\]]*\]\(([^)]+)\)/
+
+// Every task id that still has a card on disk (standalone, subtask, or group root).
+function liveIds() {
+  const ids = new Set()
+  for (const file of walkMd(TODO)) {
+    const base = path.basename(file)
+    if (base === 'README.md') continue
+    const id = base === 'root.md' ? idPrefix(path.basename(path.dirname(file))) : idPrefix(base)
+    if (id != null) ids.add(id)
+  }
+  return ids
+}
+
+// Cards that OWN a top-level README entry: a group root, or a card directly in a track
+// folder. Nested subtasks are only optionally indexed, so they aren't required here.
+function indexableCards() {
+  const out = []
+  for (const dir of walkDirs(TODO)) {
+    const id = idPrefix(path.basename(dir))
+    if (id != null && fs.existsSync(path.join(dir, 'root.md'))) {
+      out.push({ id, rel: path.join(path.relative(TODO, dir), 'root.md').split(path.sep).join('/') })
+    }
+  }
+  for (const file of walkMd(TODO)) {
+    const base = path.basename(file)
+    if (base === 'README.md' || base === 'root.md') continue
+    const relTODO = path.relative(TODO, file)
+    const segs = relTODO.split(path.sep)
+    if (segs.length !== 2) continue // nested subtask — optional
+    if (segs[0] === 'recurring') continue // recurring cards aren't board-index tasks
+    const id = idPrefix(base)
+    if (id != null) out.push({ id, rel: segs.join('/') })
+  }
+  return out
+}
+
+// Repoint stale README links to where the id actually lives now; warn on the rest.
+function reconcileReadmeLinks() {
+  const lines = fs.readFileSync(README, 'utf8').split('\n')
+  const indexed = new Set()
+  let fixed = 0
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(README_LINK)
+    if (!m) continue
+    const id = Number(m[1])
+    const linkPath = m[2]
+    indexed.add(id)
+    if (fs.existsSync(path.join(TODO, linkPath))) continue // link is live
+    const found = locate(id)
+    if (!found) {
+      warn(`README links #${id} → ${linkPath}, but no card with that id exists (removed by hand?). Drop the entry or restore the file.`)
+      continue
+    }
+    const want = (found.kind === 'group' ? path.join(found.rel, 'root.md') : found.rel).split(path.sep).join('/')
+    if (want === linkPath) continue
+    lines[i] = lines[i].replace(`(${linkPath})`, `(${want})`)
+    warn(`README link #${id} pointed at missing ${linkPath} → repointed to ${want}.`)
+    fixed++
+  }
+  if (fixed) fs.writeFileSync(README, lines.join('\n'))
+  for (const c of indexableCards()) {
+    if (!indexed.has(c.id)) {
+      warn(`card ${c.rel} (#${c.id}) is not in the README index. Add it under its track heading.`)
+    }
+  }
+}
+
+// Flag blocked_by/related that point at a task no longer on the board.
+function reconcileCrossRefs() {
+  const live = liveIds()
+  for (const file of walkMd(TODO)) {
+    const base = path.basename(file)
+    if (base === 'README.md') continue
+    const ownerId = base === 'root.md' ? idPrefix(path.basename(path.dirname(file))) : idPrefix(base)
+    if (ownerId == null) continue
+    const { meta } = parseFrontmatter(fs.readFileSync(file, 'utf8'))
+    if (!meta) continue
+    for (const field of ['blocked_by', 'related']) {
+      for (const ref of meta[field] || []) {
+        if (!live.has(ref)) {
+          warn(`#${ownerId} ${field} #${ref}, which is no longer on the board (archived/rejected?). Fix it with \`update ${ownerId}\`.`)
+        }
+      }
+    }
+  }
+}
+
+function reconcileBoard() {
+  if (!fs.existsSync(README)) return
+  reconcileReadmeLinks()
+  reconcileCrossRefs()
 }
 
 function main() {
@@ -778,8 +918,9 @@ Usage: node ${rel(SELF)} <command> [args]
                        (repeatable), --slug my-slug, --no-body.
                        The script owns the frontmatter — fill only the body by hand.
   update <id> [opts]   rewrite a card's frontmatter (same opts as create, plus
-                       --clear-questions). --track moves the card + fixes the index;
-                       --slug renames it. Body is left untouched.
+                       --status todo|ready|implementing and --clear-questions).
+                       --track moves the card + fixes the index; --slug renames it.
+                       Body is left untouched.
   migrate [--dry-run]  convert old bold-header cards to frontmatter; missing meta falls
                        back to empty / med. Skips cards that already have frontmatter.
   archive <id>         finish task <id>: remove its file/folder + README entry, count completed

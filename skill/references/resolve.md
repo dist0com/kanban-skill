@@ -24,4 +24,5 @@ Work through the questions one at a time:
    - some remain → `update <id> --question "..."` listing only the unanswered ones
      (the flag replaces the whole list).
 
-A card with an emptied `questions` list is nudgeable again.
+A card with an emptied `questions` list is nudgeable again. Nudge it next — a nudge
+is what can mark the card `ready` once the plan is concrete.

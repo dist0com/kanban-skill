@@ -1,20 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
-import { FiPlus } from "react-icons/fi";
-import { getBoard, runAgentAction } from "@/app/actions";
-import type { AgentInfo, Board } from "@/lib/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FiHelpCircle, FiPlus } from "react-icons/fi";
+import { getBoard } from "@/app/actions";
+import type { AgentInfo, Board, RunView } from "@/lib/types";
 import { AgentBadge } from "./AgentBadge";
+import { Button } from "./button";
 import {
   ActionDialog,
   type AgentReq,
   type DialogState,
   ResultOverlay,
+  RunLogOverlay,
+  RUNNING_VERB,
   type RunResult,
-  RunningOverlay,
+  RunningBadge,
 } from "./agent-shared";
-import { PriorityChip, RoiTag, TodoProgress } from "./chips";
+import { GroupChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
+import { runningRunForCard, runToResult, type StartedRun, useAgentRuns, useRunLog } from "./runs";
 
 export function BoardView({
   initialBoard,
@@ -28,8 +32,10 @@ export function BoardView({
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
   const [dialog, setDialog] = useState<DialogState>(null);
-  const [running, setRunning] = useState<string | null>(null);
   const [result, setResult] = useState<{ label: string; res: RunResult } | null>(null);
+  // The run whose log is open in the overlay (opened from a running badge).
+  const [logRunId, setLogRunId] = useState<string | null>(null);
+  const openLog = useRunLog(logRunId);
 
   const refresh = useCallback(async () => {
     try {
@@ -40,26 +46,36 @@ export function BoardView({
     }
   }, []);
 
-  // Fire an agent action, wait for it, then refresh the board. No streaming.
-  const runAgent = useCallback(
+  // A run this tab started just finished — show its output.
+  const onFinish = useCallback((run: RunView, started: StartedRun) => {
+    setResult({ label: started.label, res: runToResult(run) });
+  }, []);
+
+  const { runs, start } = useAgentRuns(onFinish);
+
+  // Re-read the board whenever any run finishes (from this tab or another), so
+  // created/archived/rejected cards appear or disappear without a manual reload.
+  const prevRunning = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const now = new Set(runs.filter((r) => r.status === "running").map((r) => r.runId));
+    let finished = false;
+    for (const id of prevRunning.current) if (!now.has(id)) finished = true;
+    prevRunning.current = now;
+    if (finished) refresh();
+  }, [runs, refresh]);
+
+  const creating = runs.some((r) => r.status === "running" && r.action === "create");
+
+  // Start a non-blocking run. A lock refusal comes back as an error message.
+  const startRun = useCallback(
     async (req: AgentReq, label: string) => {
       setDialog(null);
       setResult(null);
-      setRunning(label);
-      try {
-        const res = await runAgentAction(req);
-        setResult({ label, res });
-      } catch (e) {
-        setResult({ label, res: { ok: false, code: null, stdout: "", stderr: "", error: e instanceof Error ? e.message : String(e) } });
-      } finally {
-        setRunning(null);
-        await refresh();
-      }
+      const res = await start(req, label);
+      if (!res.ok) setError(res.error || "could not start the agent");
     },
-    [refresh],
+    [start],
   );
-
-  const busy = running !== null;
 
   return (
     <div className="flex min-h-screen flex-col bg-nb-cream">
@@ -76,11 +92,16 @@ export function BoardView({
           <span className="text-[12px] text-nb-ink-soft">files in docs/kanban/ are the source of truth</span>
         </div>
         <div className="flex items-center gap-3">
+          {creating && <RunningBadge label="Creating task" />}
           <AgentBadge info={agent} />
-          <button className="nb-cta inline-flex items-center gap-1.5" disabled={busy} onClick={() => setDialog({ kind: "create" })}>
+          <Button
+            className="gap-1.5"
+            disabled={creating}
+            onClick={() => setDialog({ kind: "create" })}
+          >
             <FiPlus className="text-[16px]" aria-hidden />
             Create task
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -113,7 +134,17 @@ export function BoardView({
                 {col.cards.length === 0 && (
                   <p className="text-[12px] italic text-nb-ink-soft">no open cards</p>
                 )}
-                {col.cards.map((card) => (
+                {col.cards.map((card) => {
+                  // A group root's progress comes from its own todo checklist, not
+                  // from counting subtask files: a finished subtask gets archived
+                  // and its file removed, so the files on disk only cover the OPEN
+                  // subtasks and would undercount done work. The root's `## Todo`
+                  // stays accurate across archives, so it drives the bar.
+                  const isGroup = (card.subtasks?.length ?? 0) > 0;
+                  // The one live run on this card (any tab), if any. It drives the
+                  // action-named badge that stands in for the saved-stage pill.
+                  const liveRun = runningRunForCard(runs, card.id);
+                  return (
                   <Link
                     key={card.id}
                     href={`/${card.id}`}
@@ -124,8 +155,29 @@ export function BoardView({
                         #{card.id}
                       </span>
                       <span className="flex items-center gap-2">
+                        {isGroup && <GroupChip />}
+                        {liveRun ? (
+                          <RunningBadge
+                            label={RUNNING_VERB[liveRun.action]}
+                            onClick={(e) => {
+                              // The card is a link; keep the click on the badge.
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setLogRunId(liveRun.runId);
+                            }}
+                          />
+                        ) : (
+                          <StatusPill status={card.status} />
+                        )}
                         {card.questions.length > 0 && (
-                          <span title="open questions" className="text-[13px] font-[800]" style={{ color: "var(--color-nb-accent)" }}>?</span>
+                          <span
+                            tabIndex={0}
+                            className="nb-tip inline-flex"
+                            data-tip={`${card.questions.length} open question${card.questions.length === 1 ? "" : "s"} — resolve before nudging`}
+                            style={{ color: "var(--color-nb-accent)" }}
+                          >
+                            <FiHelpCircle aria-hidden style={{ width: 14, height: 14 }} />
+                          </span>
                         )}
                         {card.todos.total > 0 && (
                           <TodoProgress done={card.todos.done} total={card.todos.total} />
@@ -140,17 +192,19 @@ export function BoardView({
                       <RoiTag value={card.roi} />
                     </div>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))}
         </div>
       )}
 
-      {running && <RunningOverlay label={running} />}
-      {result && !running && <ResultOverlay result={result} onClose={() => setResult(null)} />}
+      {result && <ResultOverlay result={result} onClose={() => setResult(null)} />}
 
-      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={runAgent} />}
+      {logRunId && <RunLogOverlay run={openLog} onClose={() => setLogRunId(null)} />}
+
+      {dialog && <ActionDialog dialog={dialog} onClose={() => setDialog(null)} onRun={startRun} />}
     </div>
   );
 }

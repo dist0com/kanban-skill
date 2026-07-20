@@ -3,33 +3,47 @@ title: Tail the run log on the UI
 track: features
 priority: med
 roi: med
-blocked_by: [12]
+status: ready
+blocked_by: []
 related: [11]
 questions: []
 ---
 
-Show each run's log in the UI, so the user can watch what an agent is doing instead of a bare "running" label. #12 already writes each run's log to a file — this shows it.
+Give each card a "Runs" area that is always there, so the user can find a run's log without catching it live. The log plumbing shipped with the run registry; what's left is making logs findable and the list durable.
 
-## Why it matters
+## What already works
 
-When an Implement or Review run takes a while, the user is blind: the UI shows only "running" and the final result. Showing the log builds trust and catches a wrong turn early. Because #12 writes each run's log to a file (`docs/kanban/.runs/<run-id>.log`), the UI just needs to read and display it per run.
+- While an agent runs on a card, the card page tails its log live and refreshes on its own. The board's running badge opens the same tail.
+- The live tail shows the agent's steps as they happen — each tool call and message, not just the final answer. When the run ends, the steps fold away behind one "intermediate events" row and the log leads with the final message.
+- After the run ends, a "Show last run log" button re-opens its output, read from the saved log file.
+- Only the last few KB show in the view; the full log stays in its file.
+- Live runs survive a UI restart.
 
-## Scope
+## What's still broken
 
-- Read a run's log from its file (#12 writes `docs/kanban/.runs/<run-id>.log`).
-- Add a way for the UI to fetch the log's tail (poll a `getRun(runId)` server action; reuse the same channel as the run badges).
-- Show the tail on the card page (and reachable from a run badge on the board) while the run is live. After the run ends, the log file stays, so the user can still open it — even after a UI restart.
-- Show only the last few KB on the page, so a long log doesn't bloat it. The full log is in the file.
-- Read-only: the user watches the run, they don't reply to it. Anything the agent needs from the user it raises as an open question on the card, not a live prompt.
+- Finished runs are remembered only in memory. Restart the UI and the "last run log" button is gone — the log file is still on disk, but nothing points to it.
+- A card shows only its single newest run. Older logs are on disk but unreachable.
+- A card that never ran shows nothing, so a first-time user has no hint that logs exist.
 
-## Open questions
+## The plan
 
-- Poll the tail, or push it with SSE? Match whatever #12 picks for the run badges.
+Turn the one "last run log" slot into an always-visible **Runs** area on every card page.
+
+- The area is always there. A card with no runs shows one plain line: "No runs yet. A run's log will show here."
+- A live run tails at the top, as today.
+- Under it, the card's past runs, newest first: what each did (Implement, Nudge, …), when, and pass or fail. Click one to read its saved log.
+- Save each finished run's record (action, time, result, which log) the same way live runs are already saved, so the list comes back after a UI restart.
+- Follow the existing disk rule: only the last 20 runs keep logs. A run whose log was deleted drops off the list, so every listed run opens.
+- Keep everything read-only, and keep the board badge opening the live tail.
 
 ## Todo
 
-- [ ] Expose a per-run log tail (a `getRun(runId)` server action that reads the log file).
-- [ ] Fetch and refresh the tail while a run is live (reuse the run-badge channel).
-- [ ] Show the tail on the card page and from a board run badge.
-- [ ] Let the user open a finished run's log, including after a UI restart.
-- [ ] Show only the last few KB on the page.
+- [x] Show the agent's steps (tool calls, messages) in the live tail as they happen.
+- [x] When a run ends, fold the steps away and lead with the final message.
+- [ ] Show the Runs area on every card page, always — with the "No runs yet" line when the card has none.
+- [ ] List the card's past runs (action, time, pass/fail) under the live tail, newest first.
+- [ ] Open any listed run to read its saved log.
+- [ ] Save finished-run records like live ones, so the list survives a UI restart.
+- [ ] Drop a run from the list when its log file is pruned, so every listed run opens.
+- [ ] Check the board's running badge still opens the live tail.
+- [ ] Update the local UI guide to mention the Runs area.

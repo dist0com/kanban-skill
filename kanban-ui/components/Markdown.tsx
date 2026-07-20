@@ -51,14 +51,16 @@ function remarkCardLinks(openIds: Set<number>) {
 
 export function Markdown({
   body,
-  openIds,
+  openIds = [],
+  className,
 }: {
   body: string;
-  openIds: number[];
+  openIds?: number[];
+  className?: string;
 }) {
   const ids = new Set(openIds);
   return (
-    <div className="nb-md">
+    <div className={className ? `nb-md ${className}` : "nb-md"}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkCardLinks(ids)]}
         urlTransform={urlTransform}

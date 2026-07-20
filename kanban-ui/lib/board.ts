@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseFrontmatter } from "./frontmatter";
 import { archivePath, readmePath, todoDir } from "./paths";
-import type { ArchiveGroup, Board, Card, Column } from "./types";
+import type { ArchiveGroup, Board, Card, Column, Subtask } from "./types";
 
 const idPrefix = (name: string): number | null => {
   const m = name.match(/^(\d+)-/);
@@ -16,20 +16,25 @@ function countTodos(body: string): { total: number; done: number } {
 }
 
 // Read one card file into a Card. Returns null if it has no id or no frontmatter.
-function readCard(file: string, track: string, relFromTodo: string): Card | null {
+function readCard(file: string, relFromTodo: string): Card | null {
   const id = idPrefix(path.basename(relFromTodo));
   if (id === null) {
-    // group card: id lives on the folder, file is root.md
-    const folderId = idPrefix(relFromTodo.split(path.sep)[relFromTodo.split(path.sep).length - 2] || "");
+    // group root: id lives on the folder, file is root.md
+    const parts = relFromTodo.split(path.sep);
+    const folderId = idPrefix(parts[parts.length - 2] || "");
     if (folderId === null) return null;
-    return buildCard(folderId, file, track, relFromTodo);
+    return buildCard(folderId, file, relFromTodo);
   }
-  return buildCard(id, file, track, relFromTodo);
+  return buildCard(id, file, relFromTodo);
 }
 
-function buildCard(id: number, file: string, track: string, relFromTodo: string): Card | null {
+function buildCard(id: number, file: string, relFromTodo: string): Card | null {
   const { meta, body } = parseFrontmatter(fs.readFileSync(file, "utf8"));
   if (!meta) return null;
+  // The frontmatter `track` is authoritative — it decides which column the card
+  // shows under. A group root lives in `<id>-<slug>/root.md` (a folder that is
+  // NOT a track), so its column can only come from the frontmatter, not the path.
+  const track = meta.track || path.basename(path.dirname(relFromTodo));
   return {
     id,
     relPath: relFromTodo.split(path.sep).join("/"),
@@ -37,6 +42,7 @@ function buildCard(id: number, file: string, track: string, relFromTodo: string)
     track,
     priority: meta.priority,
     roi: meta.roi,
+    status: meta.status,
     blocked_by: meta.blocked_by,
     related: meta.related,
     questions: meta.questions,
@@ -45,32 +51,104 @@ function buildCard(id: number, file: string, track: string, relFromTodo: string)
   };
 }
 
-// Collect the cards under one track folder: standalone `NN-slug.md` files and
-// group folders `NN-slug/root.md`. Mirrors how kanban.mjs locates a task.
-function cardsInTrack(track: string): Card[] {
+// A group folder is `todo/<id>-<slug>/` holding a `root.md` (the tracking card)
+// plus its subtasks under `<track>/<subid>-<slug>.md`. It is detected by the
+// presence of root.md — the folder itself is never a track/column.
+function isGroupDir(dir: string): boolean {
+  return fs.existsSync(path.join(dir, "root.md"));
+}
+
+// Read a group folder: its root card (carrying a light list of its subtasks for
+// the root page) and the full subtask cards (each linked back to the root so a
+// subtask page can point up). Subtasks never surface as their own board cards.
+function readGroup(folderName: string): { root: Card; subCards: Card[] } | null {
+  const groupDir = path.join(todoDir(), folderName);
+  const root = readCard(path.join(groupDir, "root.md"), path.join(folderName, "root.md"));
+  if (!root) return null;
+
+  const subCards: Card[] = [];
+  const recurse = (dir: string, rel: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const childRel = path.join(rel, entry.name);
+      if (entry.isDirectory()) {
+        recurse(path.join(dir, entry.name), childRel);
+      } else if (entry.name.endsWith(".md") && entry.name !== "README.md" && entry.name !== "root.md") {
+        const c = readCard(path.join(dir, entry.name), childRel);
+        if (c) {
+          c.parent = { id: root.id, title: root.title };
+          subCards.push(c);
+        }
+      }
+    }
+  };
+  recurse(groupDir, folderName);
+  subCards.sort((a, b) => a.id - b.id);
+
+  root.subtasks = subCards.map<Subtask>((c) => ({
+    id: c.id,
+    title: c.title,
+    track: c.track,
+    todos: c.todos,
+  }));
+  return { root, subCards };
+}
+
+// Standalone `NN-slug.md` cards directly under a track folder. Group folders are
+// read separately (they live at the top of todo/, not inside a track).
+function standaloneCards(track: string): Card[] {
   const dir = path.join(todoDir(), track);
   if (!fs.existsSync(dir)) return [];
   const cards: Card[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      const root = path.join(dir, entry.name, "root.md");
-      if (fs.existsSync(root)) {
-        const c = readCard(root, track, path.join(track, entry.name, "root.md"));
-        if (c) cards.push(c);
-      }
-    } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-      const c = readCard(path.join(dir, entry.name), track, path.join(track, entry.name));
+    if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") {
+      const c = readCard(path.join(dir, entry.name), path.join(track, entry.name));
       if (c) cards.push(c);
     }
   }
   return cards.sort((a, b) => a.id - b.id);
 }
 
-// Track folders present on disk (everything under todo/ except the index).
+// Read every card once. `board` is what the columns show: standalone cards and
+// group roots (never a subtask). `every` also includes each group's subtasks, so
+// a `#<id>` reference linkifies and its `/<id>` route resolves for any open card.
+function collectCards(): { board: Card[]; every: Card[] } {
+  const board: Card[] = [];
+  const every: Card[] = [];
+  for (const entry of fs.readdirSync(todoDir(), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(todoDir(), entry.name);
+    if (isGroupDir(dir)) {
+      const g = readGroup(entry.name);
+      if (g) {
+        board.push(g.root);
+        every.push(g.root, ...g.subCards);
+      }
+    } else {
+      const cards = standaloneCards(entry.name);
+      board.push(...cards);
+      every.push(...cards);
+    }
+  }
+  return { board, every };
+}
+
+// Find any open card by id, including a group subtask the columns don't show.
+export function findCard(id: number): Card | null {
+  return collectCards().every.find((c) => c.id === id) ?? null;
+}
+
+// Every open card, subtasks included. Used to reconcile a stale `status` on
+// server start-up (a card left `implementing` by a run that no longer exists).
+export function allCards(): Card[] {
+  return collectCards().every;
+}
+
+// Track folders present on disk — every directory under todo/ except the index
+// and the group folders (a group is one card in its own track, not a column).
 function trackFolders(): string[] {
   return fs
     .readdirSync(todoDir(), { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && !isGroupDir(path.join(todoDir(), e.name)))
     .map((e) => e.name);
 }
 
@@ -126,11 +204,22 @@ function readArchive(): ArchiveGroup[] {
 }
 
 export function readBoard(): Board {
+  const { board, every } = collectCards();
+  // Bucket the board cards by their frontmatter track, then lay the columns out
+  // in README order. A group root lands in its declared track next to the plain
+  // cards, not in a column named after its folder.
+  const byTrack = new Map<string, Card[]>();
+  for (const card of board) {
+    const list = byTrack.get(card.track);
+    if (list) list.push(card);
+    else byTrack.set(card.track, [card]);
+  }
   const columns: Column[] = orderedTracks().map(({ track, title }) => ({
     track,
     title,
-    cards: cardsInTrack(track),
+    cards: (byTrack.get(track) ?? []).sort((a, b) => a.id - b.id),
   }));
-  const openIds = columns.flatMap((c) => c.cards.map((card) => card.id));
+  // Linkify every open id, subtasks included — not just the cards the columns show.
+  const openIds = Array.from(new Set(every.map((card) => card.id)));
   return { columns, archive: readArchive(), openIds };
 }

@@ -4,9 +4,17 @@
 // page (per-card actions): the request/result shapes, the running + result
 // overlays, and the input dialogs for each action.
 
-import { useState } from "react";
-import type { AgentAction, Card } from "@/lib/types";
+import { useEffect, useRef, useState } from "react";
+import type { AgentAction, Card, RunView } from "@/lib/types";
+import { Button } from "./button";
 import { Dialog } from "./Dialog";
+import { Markdown } from "./Markdown";
+
+// Run-log chrome as Tailwind utilities, colocated with the markup that uses it.
+// The pulse dot (shared by the running badge and the live title bar) references
+// the nbPulse keyframe still defined in globals.css.
+const PULSE_DOT =
+  "size-[7px] rounded-full bg-nb-accent-deep animate-[nbPulse_1.1s_ease-in-out_infinite]";
 
 export interface RunResult {
   ok: boolean;
@@ -27,7 +35,6 @@ export interface AgentReq {
 
 export type DialogState =
   | { kind: "implement"; card: Card }
-  | { kind: "review"; card: Card }
   | { kind: "reject"; card: Card }
   | { kind: "archive"; card: Card }
   | { kind: "edit"; card: Card }
@@ -36,16 +43,175 @@ export type DialogState =
   | { kind: "create" }
   | null;
 
-// Blocking overlay while `claude -p` runs.
-export function RunningOverlay({ label }: { label: string }) {
+// A small inline "running" pill. Runs are non-blocking now (task #12): several
+// agents can work at once and the user keeps using the UI, so instead of one
+// full-screen overlay each running card shows this badge. Pass onClick to make
+// it open the run's log (task #14) — e.g. from a card on the board.
+export function RunningBadge({
+  label,
+  onClick,
+}: {
+  label?: string;
+  onClick?: (e: React.MouseEvent) => void;
+}) {
   return (
-    <div className="nb-scrim" style={{ alignItems: "center" }}>
-      <div className="nb-panel px-8 py-6 text-center" style={{ width: 360 }}>
-        <div className="mb-2 text-[15px] font-[800]">Agent running…</div>
-        <p className="text-[13px] text-nb-ink-soft">{label}</p>
-        <p className="mt-3 text-[12px] text-nb-ink-soft">
-          claude -p is working in the repo. The board refreshes when it finishes.
-        </p>
+    <span
+      className="nb-chip inline-flex items-center gap-1.5"
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      title={onClick ? "watch the run log" : label ? `${label} — running` : "agent running"}
+      style={{
+        background: "var(--color-nb-accent-soft)",
+        color: "var(--color-nb-accent-deep)",
+        cursor: onClick ? "pointer" : undefined,
+      }}
+    >
+      <span className={PULSE_DOT} aria-hidden />
+      {label ? label : "running"}
+    </span>
+  );
+}
+
+// Present-participle label for a live run, so the single mark a card shows while
+// busy names WHICH action is in flight (implementing / nudging / resolving / …)
+// instead of a generic "running". The badge always replaces the saved-stage pill
+// (one mark per card, never both), so this is the one place the running action is
+// read — nudge/resolve don't need their own saved status to be visible.
+export const RUNNING_VERB: Record<AgentAction, string> = {
+  implement: "implementing",
+  edit: "editing",
+  nudge: "nudging",
+  resolve: "resolving",
+  reject: "rejecting",
+  archive: "archiving",
+  create: "creating",
+};
+
+// The live tail is the agent's event stream — tool calls and turn text — so it
+// reads mono. A finished run leads with the agent's final message (markdown)
+// and folds the intermediate events away underneath.
+const MONO_TEXT = {
+  whiteSpace: "pre-wrap",
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+} as const;
+const PROSE_TEXT = {
+  whiteSpace: "pre-wrap",
+  fontFamily: "var(--font-sans)",
+  fontSize: 13.5,
+  lineHeight: 1.65,
+} as const;
+
+// A tailing view of one run's captured output (task #14). Shows the last few KB;
+// auto-scrolls to the newest line unless the user has scrolled up to read back.
+// Once the run ends with a parsed final message, the view leads with that
+// message and the intermediate events fold into a collapsed row above it.
+// `run` is the polled RunView (see useRunLog); null renders nothing.
+export function RunLog({
+  run,
+  collapsed = false,
+  onToggle,
+  openIds,
+}: {
+  run: RunView | null;
+  collapsed?: boolean;
+  onToggle?: () => void;
+  openIds?: number[];
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true);
+  const tail = (run?.tail || "").trim();
+  const result = (run?.result || "").trim();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [tail]);
+
+  if (!run) return null;
+  const running = run.status === "running";
+  // No word while running — the pulse dot already signals progress.
+  const state = running ? "" : run.ok ? "done" : `exited ${run.code ?? "?"}`;
+
+  return (
+    <div className="nb-outline bg-nb-paper">
+      <div
+        className={`flex items-center gap-2.5 px-3 py-1 border-b-[1.5px] border-nb-ink rounded-t-[12.5px] bg-[linear-gradient(var(--color-nb-cream),color-mix(in_srgb,var(--color-nb-ink)_9%,var(--color-nb-cream)))] last:border-b-0 last:rounded-b-[12.5px]${onToggle ? " cursor-pointer select-none" : ""}`}
+        role={onToggle ? "button" : undefined}
+        aria-expanded={onToggle ? !collapsed : undefined}
+        aria-label={onToggle ? (collapsed ? "Expand run log" : "Collapse run log") : undefined}
+        onClick={onToggle}
+      >
+        <span className="nb-tag">run log</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          {running ? (
+            <span className={PULSE_DOT} aria-hidden />
+          ) : (
+            <span aria-hidden style={{ color: "var(--color-nb-accent-deep)" }}>{run.ok ? "✓" : "✕"}</span>
+          )}
+          {state && <span className="text-[11px] text-nb-ink-soft">{state}</span>}
+        </span>
+      </div>
+      {!collapsed && (
+        <div
+          ref={ref}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+          }}
+          className="max-h-[50vh] overflow-auto px-4 py-3 bg-nb-wash rounded-b-[12.5px] shadow-[inset_0_1px_3px_color-mix(in_srgb,var(--color-nb-ink)_8%,transparent)]"
+        >
+          {running ? (
+            // A live tail is streaming events, not markdown — keep the raw
+            // terminal look so partial lines don't get mangled mid-render.
+            <pre className="m-0 text-nb-ink-soft" style={MONO_TEXT}>
+              {tail || "…"}
+            </pre>
+          ) : result ? (
+            // The final message leads; the event lines it streamed on the way
+            // fold into one collapsed row above it.
+            <>
+              {tail && (
+                <details className="mb-2">
+                  <summary className="cursor-pointer select-none text-[10px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft hover:text-nb-ink">
+                    intermediate events
+                  </summary>
+                  <pre className="m-0 mt-2 text-nb-ink-soft" style={MONO_TEXT}>
+                    {tail}
+                  </pre>
+                </details>
+              )}
+              <Markdown body={result} openIds={openIds} className="nb-runlog-md" />
+            </>
+          ) : tail ? (
+            // No parsed final message (custom agent command, or a run re-adopted
+            // after a restart) — the tail is all there is.
+            <Markdown body={tail} openIds={openIds} className="nb-runlog-md" />
+          ) : (
+            <pre className="m-0 text-nb-ink-soft" style={MONO_TEXT}>
+              (no output)
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The run log in a modal, opened from a running badge on the board.
+export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: () => void }) {
+  const title = run ? `#${run.cardId ?? "?"} — ${run.action}` : "run log";
+  return (
+    <div className="nb-scrim" style={{ alignItems: "center" }} onClick={onClose}>
+      <div className="nb-panel" style={{ width: 620, maxWidth: "100%" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: "1.5px solid var(--color-nb-ink)" }}>
+          <h2 className="text-[15px] font-[800]">{title}</h2>
+          <button aria-label="Close" className="text-[18px] text-nb-ink-soft hover:text-nb-ink" onClick={onClose}>×</button>
+        </div>
+        <div className="p-4">
+          <RunLog run={run} />
+        </div>
       </div>
     </div>
   );
@@ -73,9 +239,11 @@ export function ResultOverlay({
           {result.res.error && (
             <p className="mb-2 text-[13px]" style={{ color: "var(--color-nb-accent-deep)" }}>{result.res.error}</p>
           )}
-          <pre className="max-h-[320px] overflow-auto text-[12px]" style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)" }}>
+          <pre className="max-h-[50vh] overflow-auto" style={PROSE_TEXT}>
             {(result.res.stdout || "").trim() || (result.res.ok ? "(done)" : "")}
-            {result.res.stderr ? "\n\n[stderr]\n" + result.res.stderr : ""}
+            {result.res.stderr ? (
+              <span style={MONO_TEXT}>{"\n\n[stderr]\n" + result.res.stderr.trim()}</span>
+            ) : null}
           </pre>
         </div>
       </div>
@@ -97,32 +265,29 @@ export function ActionDialog({
   const [text, setText] = useState("");
 
   if (dialog.kind === "implement") {
+    // Warn but allow: `ready` means the plan is vetted and safe to build. On any
+    // other stage the card may still be vague, so nudge it a warning — the user
+    // can still go ahead.
+    const notReady = dialog.card.status !== "ready";
     return (
       <Dialog title={`Implement #${dialog.card.id}`} onClose={onClose}>
         <p className="mb-2 text-[13px] text-nb-ink-soft">
           The agent reads the card, does the work, and checks off the todos.
         </p>
+        {notReady && (
+          <p
+            className="mb-2 text-[13px]"
+            style={{ color: "var(--color-nb-accent-deep)" }}
+          >
+            This card isn&apos;t marked <strong>ready</strong> yet — its plan may still be
+            rough. Nudge it to ready first, or implement anyway.
+          </p>
+        )}
         <textarea className="nb-input" rows={4} placeholder="Optional extra notes for the agent…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run implement"
+          confirmLabel={notReady ? "Implement anyway" : "Run implement"}
           onConfirm={() => onRun({ action: "implement", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Implement #${dialog.card.id}`)}
-        />
-      </Dialog>
-    );
-  }
-
-  if (dialog.kind === "review") {
-    return (
-      <Dialog title={`Review #${dialog.card.id}`} onClose={onClose}>
-        <p className="mb-2 text-[13px] text-nb-ink-soft">
-          The agent checks whether the task is really done. Anything still owed by you is saved as
-          open questions on the card — it won&apos;t implement or mark it done.
-        </p>
-        <DialogButtons
-          onClose={onClose}
-          confirmLabel="Run review"
-          onConfirm={() => onRun({ action: "review", id: dialog.card.id, title: dialog.card.title }, `Review #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -151,10 +316,11 @@ export function ActionDialog({
         <p className="mb-2 text-[13px] text-nb-ink-soft">
           All todos are done. The agent writes the &ldquo;what you can now do&rdquo; note into archive.md and removes the card.
         </p>
+        <textarea className="nb-input" rows={3} placeholder="Optional note for the agent…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
           confirmLabel="Run archive"
-          onConfirm={() => onRun({ action: "archive", id: dialog.card.id, title: dialog.card.title }, `Archive #${dialog.card.id}`)}
+          onConfirm={() => onRun({ action: "archive", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Archive #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -191,10 +357,11 @@ export function ActionDialog({
           The agent moves the card one step forward: it reviews the plan, then rewrites it one
           stage — no further. Anything it can&apos;t decide is saved as an open question for you.
         </p>
+        <textarea className="nb-input" rows={3} placeholder="Optional note to steer the nudge…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
           confirmLabel="Run nudge"
-          onConfirm={() => onRun({ action: "nudge", id: dialog.card.id, title: dialog.card.title }, `Nudge #${dialog.card.id}`)}
+          onConfirm={() => onRun({ action: "nudge", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Nudge #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -208,10 +375,11 @@ export function ActionDialog({
           evidence settles, writing the answers into the card. Real judgment calls stay as open
           questions for you to answer later.
         </p>
+        <textarea className="nb-input" rows={3} placeholder="Optional note to steer the resolve…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
           confirmLabel="Run resolve"
-          onConfirm={() => onRun({ action: "resolve", id: dialog.card.id, title: dialog.card.title }, `Resolve #${dialog.card.id}`)}
+          onConfirm={() => onRun({ action: "resolve", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Resolve #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -247,8 +415,8 @@ export function DialogButtons({
 }) {
   return (
     <div className="mt-4 flex justify-end gap-2.5">
-      <button className="nb-cta-ghost" onClick={onClose}>Cancel</button>
-      <button className="nb-cta" disabled={disabled} onClick={onConfirm}>{confirmLabel}</button>
+      <Button variant="ghost" onClick={onClose}>Cancel</Button>
+      <Button disabled={disabled} onClick={onConfirm}>{confirmLabel}</Button>
     </div>
   );
 }

@@ -56,8 +56,21 @@ The review's outcome is two lists:
 mention coding details — what functions to add, what files to touch. Stop when the
 whole plan is easy to start.
 
-If the review raised open questions, still rewrite with what you could decide, but
-leave the questions on the card — the next nudge is blocked until they're resolved.
+## 3. Mark it ready (when it's done)
+
+A nudge that lands a concrete plan with no open questions has finished the card — say
+so on the board. Mark it `ready` with
+`node .claude/skills/kanban/kanban.mjs update <id> --status ready`. `ready` means the
+plan is concrete, the questions list is empty, and someone could start building now.
+The user scans for the `ready` pill to pick what to implement next.
+
+Only mark `ready` when **both** hold: the plan is concrete (this nudge stopped at the
+code level, not one stage short) and the `questions` list is empty. If the review
+raised open questions, still rewrite with what you could decide, but leave the
+questions on the card and don't mark it ready — the next nudge is blocked until
+they're resolved. (Recording a question with `update <id> --question` on a card that
+was already `ready` drops it back to `todo` on its own — the plan is no longer
+settled.)
 
 ## Group tasks
 

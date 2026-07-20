@@ -12,16 +12,14 @@ _(none)_
 ## features
 
 - [#11 Agent run state management](11-agent-run-state-management/root.md) — group
-  - [#12 Run registry, non-blocking runs, and locks](11-agent-run-state-management/features/12-run-registry-and-locks.md)
-  - [#13 Add a durable status field to the card format](11-agent-run-state-management/features/13-durable-status-field.md)
   - [#14 Tail the run log on the UI](11-agent-run-state-management/features/14-tail-logs-on-ui.md)
-- [#15 Show group tasks in the UI with clickable subtasks](features/15-show-group-tasks-in-the-ui-with-clickable-subtasks.md)
-- [#17 UI: nudge action that becomes Resolve when a card has open questions](features/17-ui-nudge-action-that-becomes-resolve-when-a-card-has-open-qu.md)
+- [#20 Redirect to the board when a task id is not found](features/20-redirect-to-the-board-when-a-task-id-is-not-found.md)
 
 ## skill
 
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
+- [#19 Script update on a group subtask moves the card and breaks its track](skill/19-script-update-on-a-group-subtask-moves-the-card-and-breaks-i.md)
 
 ## docs
 

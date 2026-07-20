@@ -37,7 +37,6 @@ export const boardRows: { say: string; does: string }[] = [
 // short one-liners — the buttons are self-explanatory once you see the board.
 export const uiActions: { icon: string; label: string; body: string }[] = [
   { icon: "🔨", label: "Implement", body: "hand the card to Claude to build" },
-  { icon: "🔍", label: "Review", body: "check the work is really done" },
   { icon: "✏️", label: "Edit", body: "revise the card, don't run it" },
   { icon: "📦", label: "Archive", body: "sweep a finished card away" },
 ];
