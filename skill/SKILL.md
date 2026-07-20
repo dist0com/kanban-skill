@@ -8,27 +8,21 @@ The task board lives in `docs/kanban/`. Read it before suggesting or adding work
 
 ## Configuration
 
-This skill adapts to your project through `config.md` in this folder — your project name,
-tracks, planning sources, reference docs, and optional preset. **Read `config.md` first.**
-The install step fills it in; until then its defaults apply.
-
-`config.md` is the **only** file here that carries your project's settings. Everything else
-(`SKILL.md`, `kanban.mjs`, `references/`) is generic and owned by upstream — an update
-overwrites those wholesale and never touches `config.md` (see "Updating the skill").
-
-Where this doc says "your tracks", "your planning sources", or "your reference docs", it
-means the values in `config.md`.
+**Read `config.md` first** — it carries your project's settings: name, tracks, planning
+sources, reference docs, optional preset. The install step fills it in; until then its
+defaults apply. It's the only file here an update leaves untouched — everything else
+(`SKILL.md`, `kanban.mjs`, `references/`) is generic, owned by upstream, and overwritten
+wholesale (see "Updating the skill"). Where this doc says "your tracks", "your planning
+sources", or "your reference docs", it means the values in `config.md`.
 
 ## Writing style
 
-Write every card in simple, clear, short language. No jargon, no business-speak, no
-clever phrasing. A non-native reader skimming should get it in one pass.
+Write every card in simple, clear, short language — say what to do and why it matters.
+No jargon, no business-speak, no clever phrasing. A non-native reader skimming should
+get it in one pass.
 
 - Bad: "Price it as a monthly retainer for an outcome stream."
 - Good: "Charge $300/month. The user gets a brief each week and a report each month."
-
-Say what to do and why it matters, in plain words. Cut any sentence you'd be
-embarrassed to read out loud.
 
 ## Layout
 
@@ -80,18 +74,14 @@ node .claude/skills/kanban/kanban.mjs help                  # full usage
 The script validates every value — unknown track, bad priority/roi, invented `#id`, or a
 mistyped flag are hard errors, so a hallucinated field can't slip into a card.
 
-Never edit `docs/kanban/next-id` or `metrics.csv` by hand — let the script write them.
-**Never hand-write a card's frontmatter either.** Use `create`/`update` for the meta
+**Never hand-write a card's frontmatter.** Use `create`/`update` for the meta
 (title, track, priority, roi, blocked_by, related, questions); use Write/Edit only for the
 card **body** (summary, scope, todos).
 
 ## Task id
 
-Every task's id is the number at the front of its filename (`04-plan-cap-enforcement.md` → id 4). Ids are global and never reused.
-
-To get a bare id, run `node .claude/skills/kanban/kanban.mjs create` — it prints the id and
-advances `next-id`. For a group task, `create --count N` returns N consecutive ids at once.
-To scaffold a whole card in one step, pass `--title` and `--track` (see "Add a task").
+Every task's id is the number at the front of its filename (`04-plan-cap-enforcement.md` →
+id 4). Ids are global and never reused; only the script's `create` allocates them.
 
 ## Propose the next things to do
 
@@ -108,8 +98,7 @@ Review before writing, then again after. Both passes use `references/task-review
 on a fail, ask the user a question about what it flagged, then decide from the answer
 whether to proceed or drop it. Never drop a task without asking a question first.
 
-1. **Review the idea first.** Before writing anything, review the task idea against
-   `references/task-review.md` — business necessity, feasibility, feature value,
+1. **Review the idea first** — business necessity, feasibility, feature value,
    duplication. Read `docs/kanban/redesign.md` and drop or fix any design it warns
    against. Only proceed if it passes (or the user's answer says to).
 2. **Scaffold the card, then write its body.** Create the card and its frontmatter with
@@ -119,8 +108,8 @@ whether to proceed or drop it. Never drop a task without asking a question first
    only the **body** (summary, scope, todos) with Write/Edit and leaves the frontmatter
    alone. Adding three tasks? Run `create` three times (each returns its id) and spawn three
    subagents in parallel.
-3. **Review the written card.** Re-check it against `references/task-review.md` — plain
-   language, todos split, unambiguous plan. Keep it if it passes.
+3. **Review the written card** — plain language, todos split, unambiguous plan. Keep it
+   if it passes.
 
 ## Review a task
 
@@ -166,8 +155,8 @@ subtasks that must run in order. Full spec in `references/add-task.md`.
 
 ## Finish a task
 
-This is for one-shot tasks. A card under `todo/recurring/` is never finished this way —
-each run uses `run <id>` and keeps the card (see "Recurring task").
+One-shot tasks only — a recurring card is never finished this way; each run uses
+`run <id>` and keeps the card (see "Recurring task").
 
 Don't keep the full card — it just wastes tokens on future scans. Rewrite it down
 to a 1-2 line note and add it to `docs/kanban/archive.md` under the topic that fits
@@ -229,10 +218,8 @@ growth / validation / building.
 ## Recurring task
 
 A **recurring task** is a job we repeat on a cadence (e.g. a weekly report), not a one-shot
-we finish and archive. Recurring cards live in `todo/recurring/`, its own folder parallel to
-`blockers/` and the track folders, and set `track: recurring` in their frontmatter.
-
-A recurring card carries two extra sections:
+we finish and archive. Its card lives in `todo/recurring/`, sets `track: recurring` in the
+frontmatter, and carries two extra sections:
 
 - `## Process` — the distilled, in-order steps of one run. Tag each step by how it runs
   today: `[script]` a command to run, `[agent]` an instruction the agent follows, `[ask]`
@@ -284,9 +271,5 @@ docs, this step is a no-op.
 
 - your roadmap doc (Configuration) — product direction.
 - your user-facing docs (Configuration) — what you promise and teach users.
-- `references/propose.md` — picking one focus area and proposing the next tasks in it.
 - `references/presets/` — optional bundles that add tracks and reviews for a specific
   kind of project (e.g. `indie-hacker.md`).
-- `references/local-ui.md` — running the local board UI (`kanban-ui/`) and its buttons.
-- `references/update.md` — pulling a newer version of the skill into an installed project.
-- `config.md` — your project's settings (the only file an update leaves untouched).

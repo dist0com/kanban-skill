@@ -4,12 +4,12 @@ Take one task and move it one step forward — from vague to concrete. A nudge i
 substeps, always in order: **review** the card, then **rewrite** it.
 
 **Gate: open questions block a nudge.** If the card's `questions` frontmatter is not
-empty, the card is waiting on decisions — don't nudge it. Resolve the questions first
-(`references/resolve.md`), then nudge once the list is empty.
+empty, it's waiting on decisions — resolve them first (`references/resolve.md`), then
+nudge once the list is empty.
 
 ## 1. Review
 
-Read the card and check it on four points. Don't overthink — flag real problems, not
+Read the card and check these points. Don't overthink — flag real problems, not
 hypotheticals.
 
 1. **Missing steps.** Work the plan implies but never lists: a docs update, tests, a
@@ -17,12 +17,18 @@ hypotheticals.
 2. **Missed edge cases and unreliable designs.** Call out design mistakes the card
    glosses over. Example: a task-management backend designed to keep tasks only in
    memory loses everything on restart — that's a mistake to point out, not a detail.
-   Also check decisions the card already states. A written decision can still be
-   wrong — don't skip it just because it looks settled.
-3. **Over-complication.** Is the design more machinery than the value justifies? Name
+   Also re-check decisions the card already states — written doesn't mean right.
+3. **Goal fit.** The goal is the card's title and its "so the user can ..." line —
+   not whatever the body's summary has grown into over past nudges. Test each piece
+   of the plan: would the goal still be met with this piece cut? If yes, it's scope
+   creep — cut it or split it off. On-topic is not the test; needed for the goal is.
+   The common drift: the goal names one thing ("find a run's log"), the plan builds
+   the general version ("a history of all runs"). Trimming a plan back to its goal
+   counts as pushing the card forward.
+4. **Over-complication.** Is the design more machinery than the value justifies? Name
    what to cut.
-4. **Actionability.** Is the card still a rough idea nobody could start on?
-5. **Stale todos.** Check each unchecked todo against the repo — work sometimes lands
+5. **Actionability.** Is the card still a rough idea nobody could start on?
+6. **Stale todos.** Check each unchecked todo against the repo — work sometimes lands
    without the box getting ticked. Note the ones that are already done.
 
 The review's outcome is two lists:
@@ -49,12 +55,12 @@ The review's outcome is two lists:
 2. **Apply the revisions** from the review.
 3. **Refresh the todo list.** Tick off every todo the review found already done. If
    every box already matches reality, leave the list as is.
-4. **Split off side ideas.** An idea that came up during the nudge but isn't part of
-   this task becomes its own card (follow `references/add-task.md`, including its rule
-   against near-duplicate splits) — not a bullet buried in this one.
-5. **Write the result back into the card body.** Use plain, short, clear language, the
-   way `references/add-task.md` writes a card: short lines, plain words, no jargon. A
-   reader should get each line at a glance.
+4. **Split off side ideas.** An idea that came up during the nudge but isn't needed
+   for the goal (the goal-fit test — on-topic doesn't count) becomes its own card
+   (follow `references/add-task.md`, including its rule against near-duplicate
+   splits), not a bullet buried in this one.
+5. **Write the result back into the card body**, in the plain, short language
+   `references/add-task.md` uses — a reader should get each line at a glance.
 
 **Stop at the code level.** Never push further once the plan is concrete. Don't
 mention coding details — what functions to add, what files to touch. Stop when the
@@ -62,19 +68,16 @@ whole plan is easy to start.
 
 ## 3. Mark it ready (when it's done)
 
-A nudge that lands a concrete plan with no open questions has finished the card — say
-so on the board. Mark it `ready` with
-`node .claude/skills/kanban/kanban.mjs update <id> --status ready`. `ready` means the
-plan is concrete, the questions list is empty, and someone could start building now.
-The user scans for the `ready` pill to pick what to implement next.
+A nudge that lands a concrete plan with no open questions has finished the card. Mark
+it `ready` with `node .claude/skills/kanban/kanban.mjs update <id> --status ready` —
+only when **both** hold: the plan is concrete (this nudge stopped at the code level,
+not one stage short) and the `questions` list is empty, so someone could start
+building now. The user scans for the `ready` pill to pick what to implement next.
 
-Only mark `ready` when **both** hold: the plan is concrete (this nudge stopped at the
-code level, not one stage short) and the `questions` list is empty. If the review
-raised open questions, still rewrite with what you could decide, but leave the
-questions on the card and don't mark it ready — the next nudge is blocked until
-they're resolved. (Recording a question with `update <id> --question` on a card that
-was already `ready` drops it back to `todo` on its own — the plan is no longer
-settled.)
+If the review raised open questions, still rewrite with what you could decide, but
+leave the questions on the card and don't mark it ready — the next nudge is blocked
+until they're resolved. (Recording a question with `update <id> --question` on a card
+that was already `ready` drops it back to `todo` on its own.)
 
 ## Group tasks
 

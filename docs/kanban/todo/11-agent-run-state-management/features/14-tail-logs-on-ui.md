@@ -9,7 +9,7 @@ related: [11]
 questions: []
 ---
 
-Give each card a "Runs" area that is always there, so the user can find a run's log without catching it live. The log plumbing shipped with the run registry; what's left is making logs findable and the list durable.
+Let the user find a card's most recent run log without catching it live — after the run ends, and after a UI restart. The log plumbing shipped with the run registry; what's left is making the last run's record durable. One run is enough: no run history list (see rejected.md).
 
 ## What already works
 
@@ -22,29 +22,23 @@ Give each card a "Runs" area that is always there, so the user can find a run's 
 ## What's still broken
 
 - Finished runs are remembered only in memory. Restart the UI and the "last run log" button is gone — the log file is still on disk, but nothing points to it.
-- A card shows only its single newest run. Older logs are on disk but unreachable.
-- A card that never ran shows nothing, so a first-time user has no hint that logs exist.
 
 ## The plan
 
-Turn the one "last run log" slot into an always-visible **Runs** area on every card page.
+Keep the one "Show last run log" slot; make it durable.
 
-- The area is always there. A card with no runs shows one plain line: "No runs yet. A run's log will show here."
-- A live run tails at the top, as today.
-- Under it, the card's past runs, newest first: what each did (Implement, Nudge, …), when, and pass or fail. Click one to read its saved log.
-- A run that outlived a UI restart ends with no known result. List it as finished without a pass/fail mark — don't guess.
-- Save each finished run's record (action, time, result, which log) the same way live runs are already saved, so the list comes back after a UI restart.
-- Follow the existing disk rule: only the last 20 runs keep logs. A run whose log was deleted drops off the list, so every listed run opens.
+- Save each card's last finished run (action, time, pass/fail, which log) to disk, the same way live runs are already saved, so the button comes back after a UI restart.
+- A run that outlived a UI restart ends with no known result. Show it as finished without a pass/fail mark — don't guess.
+- If the last run's log file was pruned (the disk keeps only the last 20 logs), drop its record too, so the button never opens onto nothing.
+- Older runs get no UI. Their logs stay on disk under the 20-log cap for anyone who digs.
 - Keep everything read-only, and keep the board badge opening the live tail.
 
 ## Todo
 
 - [x] Show the agent's steps (tool calls, messages) in the live tail as they happen.
 - [x] When a run ends, fold the steps away and lead with the final message.
-- [ ] Show the Runs area on every card page, always — with the "No runs yet" line when the card has none.
-- [ ] List the card's past runs (action, time, pass/fail) under the live tail, newest first.
-- [ ] Open any listed run to read its saved log.
-- [ ] Save finished-run records like live ones, so the list survives a UI restart.
-- [ ] Drop a run from the list when its log file is pruned, so every listed run opens.
+- [ ] Save each card's last finished run to disk, so "Show last run log" survives a UI restart.
+- [ ] Show a run that outlived a restart as finished, with no pass/fail mark.
+- [ ] Drop the saved record when its log file is pruned, so the button never opens onto nothing.
 - [ ] Check the board's running badge still opens the live tail.
-- [ ] Update the local UI guide to mention the Runs area.
+- [ ] Update the local UI guide to mention the last-run log.

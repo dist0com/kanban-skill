@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { FiX } from "react-icons/fi";
 
 // A small modal on the neo-brutalism scrim. Esc closes; clicking the backdrop
 // closes; the panel itself doesn't.
@@ -50,9 +51,9 @@ export function Dialog({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1 grid h-7 w-7 place-items-center rounded-[6px] text-[18px] leading-none text-nb-ink-soft transition-[transform,background-color,color] duration-100 hover:bg-nb-ink/5 hover:text-nb-ink active:scale-90 active:bg-nb-ink/10"
+            className="-mr-1 grid h-7 w-7 cursor-pointer place-items-center rounded-[6px] text-nb-ink-soft transition-[transform,background-color,color] duration-100 hover:bg-nb-ink/5 hover:text-nb-ink active:scale-90 active:bg-nb-ink/10"
           >
-            ×
+            <FiX className="h-[18px] w-[18px]" />
           </button>
         </div>
         <div className="overflow-y-auto p-5">{children}</div>

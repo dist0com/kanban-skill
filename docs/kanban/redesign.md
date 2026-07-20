@@ -16,9 +16,9 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
   gitignored file, so it survives a restart and past runs can be audited. The UI tails
   the file.
 - ❌ **Show a run's log only while it's live** (visible for one moment, gone after the run
-  or a restart) → ✅ the log is a place, not a moment: an always-visible Runs list on each
-  card, with past runs openable after a restart. A feature the user can only reach by
-  catching it live isn't findable.
+  or a restart) → ✅ the log is a place, not a moment: the card's most recent run stays
+  openable after the run ends and after a restart. One run is enough — a per-card run
+  history list is overdesign.
 
 ## Card format
 
