@@ -6,6 +6,7 @@ import { HkSummary } from "@/components/vs-hermes-kanban/HkSummary";
 import { HkHarness } from "@/components/vs-hermes-kanban/HkHarness";
 import { HkComparison } from "@/components/vs-hermes-kanban/HkComparison";
 import { HkMemory } from "@/components/vs-hermes-kanban/HkMemory";
+import { HkAutonomy } from "@/components/vs-hermes-kanban/HkAutonomy";
 import { HkGui } from "@/components/vs-hermes-kanban/HkGui";
 import { HkWins } from "@/components/vs-hermes-kanban/HkWins";
 import { HkDecision } from "@/components/vs-hermes-kanban/HkDecision";
@@ -57,6 +58,7 @@ export default function VsHermesPage() {
         <HkHarness />
         <HkComparison />
         <HkMemory />
+        <HkAutonomy />
         <HkGui />
         <HkWins />
         <HkDecision />

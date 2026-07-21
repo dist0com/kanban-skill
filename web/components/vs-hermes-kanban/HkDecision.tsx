@@ -45,7 +45,7 @@ function Guide({
 export function HkDecision() {
   return (
     <section className="mt-24">
-      <SectionHeading num="07" eyebrow="The call" title="Which should you use?" />
+      <SectionHeading num="08" eyebrow="The call" title="Which should you use?" />
 
       <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Guide

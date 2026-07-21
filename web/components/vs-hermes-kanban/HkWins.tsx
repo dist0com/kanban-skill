@@ -44,7 +44,7 @@ function WinColumn({
 export function HkWins() {
   return (
     <section className="mt-24">
-      <SectionHeading num="06" eyebrow="Trade-offs" title="Where each one wins" />
+      <SectionHeading num="07" eyebrow="Trade-offs" title="Where each one wins" />
       <p className="text-ink">
         Neither is strictly better. The kanban skill optimizes for a lean,
         file-based board with no infra of its own; Hermes Kanban optimizes for a

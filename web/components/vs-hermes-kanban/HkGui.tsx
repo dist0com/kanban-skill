@@ -52,7 +52,7 @@ function GuiCard({
 export function HkGui() {
   return (
     <section className="mt-24">
-      <SectionHeading num="05" eyebrow="The dashboards" title="Kanban Board GUI" />
+      <SectionHeading num="06" eyebrow="The dashboards" title="Kanban Board GUI" />
       <p className="text-ink">
         Both ship a web board, but they play different roles. The skill&apos;s
         board is a <span className="font-semibold">control surface for your agent</span>{" "}
