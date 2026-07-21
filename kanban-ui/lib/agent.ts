@@ -61,7 +61,7 @@ export interface AgentRequest {
   action: AgentAction;
   id?: number;
   title?: string;
-  notes?: string; // implement, edit, nudge, resolve, archive
+  notes?: string; // implement, edit, refine, resolve, archive
   reason?: string; // reject
   description?: string; // create
 }
@@ -101,15 +101,9 @@ export function buildPrompt(req: AgentRequest): string {
         `Follow the skill's add-task flow. Create task only, don't implement it.`,
         `Don't ask me questions with human-in-the-loop. Leave any questions as open questions.`,
       ].join(" ");
-    case "nudge":
+    case "refine":
       return [
-        `/kanban. Nudge task ${req.id} ${named}: move it one step forward following \`references/nudge.md\`.`,
-        `Review the card, then rewrite it one stage only — apply the fixes you can decide,`,
-        `record decisions you still owe the user as open questions with`,
-        `\`${SCRIPT} update ${req.id} --question "..."\` (repeatable), and stop at the code level.`,
-        `If the plan is now concrete and no questions are open, mark it ready with`,
-        `\`${SCRIPT} update ${req.id} --status ready\`.`,
-        `Don't implement, archive, or reject it.`,
+        `/kanban. Refine task ${req.id} ${named}: move it one step forward following \`references/refine.md\`.`,
         req.notes ? `Extra notes: ${req.notes}` : "",
       ]
         .filter(Boolean)
@@ -117,11 +111,6 @@ export function buildPrompt(req: AgentRequest): string {
     case "resolve":
       return [
         `/kanban. Resolve the open questions on task ${req.id} ${named} following \`references/resolve.md\`.`,
-        `Research each question, decide it yourself when the evidence settles it and note the`,
-        `decision in the card body. Leave anything that's a real judgment call as an open`,
-        `question — the user answers it later, there's no mid-run reply. Clear answered ones with`,
-        `\`${SCRIPT} update ${req.id} --clear-questions\` (or re-list only the unanswered with --question).`,
-        `Don't implement, archive, or reject it.`,
         req.notes ? `Extra notes: ${req.notes}` : "",
       ]
         .filter(Boolean)

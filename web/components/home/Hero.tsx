@@ -19,8 +19,8 @@ export function Hero() {
           <code className="rounded bg-accent/10 px-1.5 py-0.5 font-mono text-[0.9em] text-ink">
             docs/kanban/
           </code>{" "}
-          — in git, diffable, readable by you and the agent. No database, no web app,
-          no MCP. Just talk to the board.
+          — in git, diffable, readable by you and the agent. No database, no
+          MCP. Just talk to the board.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a

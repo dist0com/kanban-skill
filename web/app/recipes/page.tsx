@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { RecipeCard } from "@/components/recipes/RecipeCard";
 import { recipes } from "@/components/recipes/recipes-content";
 import { panelStatic } from "@/components/styles";
-import { BASE_URL } from "@/lib/site";
+import { BASE_URL, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Recipes — ready-made recurring tasks for your kanban board",
@@ -18,12 +18,14 @@ export const metadata: Metadata = {
     title: "Recipes — ready-made recurring tasks for your kanban board",
     description:
       "Ready-made recurring tasks you add to your board in one prompt. Claude pulls the recipe by URL and runs it on the cadence you choose.",
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Recipes — ready-made recurring tasks for your kanban board",
     description:
       "Ready-made recurring tasks you add to your board in one prompt. Claude pulls the recipe by URL and runs it on the cadence you choose.",
+    images: [OG_IMAGE.url],
   },
 };
 

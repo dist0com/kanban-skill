@@ -14,7 +14,7 @@ export async function getBoard(): Promise<Board> {
   return readBoard();
 }
 
-const ACTIONS = new Set(["implement", "reject", "archive", "edit", "create", "nudge", "resolve"]);
+const ACTIONS = new Set(["implement", "reject", "archive", "edit", "create", "refine", "resolve"]);
 
 // Start an agent and return immediately with a runId (or a lock message). The
 // request never waits for the child — the client polls listRunsAction() to see

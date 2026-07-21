@@ -123,7 +123,7 @@ export function BoardView({
                           <span
                             tabIndex={0}
                             className="nb-tip inline-flex"
-                            data-tip={`${card.questions.length} open question${card.questions.length === 1 ? "" : "s"} — resolve before nudging`}
+                            data-tip={`${card.questions.length} open question${card.questions.length === 1 ? "" : "s"} — resolve before refining`}
                             style={{ color: "var(--color-nb-accent)" }}
                           >
                             <FiHelpCircle aria-hidden style={{ width: 14, height: 14 }} />

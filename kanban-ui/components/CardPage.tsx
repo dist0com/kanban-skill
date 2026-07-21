@@ -65,7 +65,7 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
 
   // A live run on this card (from any tab) blocks a second run and shows a badge.
   const busy = runningCardIds(runs).has(card.id);
-  // The run itself, so the badge can name the action in flight (nudging, etc.).
+  // The run itself, so the badge can name the action in flight (refining, etc.).
   const liveRun = runningRunForCard(runs, card.id);
   const { total, done } = card.todos;
   const allDone = total > 0 && done === total;
@@ -150,17 +150,17 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
             <FiEdit2 className="text-[15px]" aria-hidden />
             Edit
           </Button>
-          {/* One slot: Resolve while the card has open questions (a nudge is
-              blocked until they're cleared), otherwise Nudge. Never both. */}
+          {/* One slot: Resolve while the card has open questions (a refine is
+              blocked until they're cleared), otherwise Refine. Never both. */}
           {card.questions.length > 0 ? (
             <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "resolve", card })}>
               <FiHelpCircle className="text-[15px]" aria-hidden />
               Resolve
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "nudge", card })}>
+            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "refine", card })}>
               <FiTrendingUp className="text-[15px]" aria-hidden />
-              Nudge
+              Refine
             </Button>
           )}
           {allDone && (

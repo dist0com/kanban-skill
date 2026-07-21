@@ -88,7 +88,7 @@ export function RecipeLanding({
           </div>
         </div>
 
-        {/* Prerequisite nudge */}
+        {/* Prerequisite note */}
         <div className={`${panelStatic} mt-8 bg-code p-5`}>
           <p className="text-sm text-muted">
             <span className="font-semibold text-ink">Prerequisite:</span> the{" "}

@@ -15,7 +15,7 @@ Fix `update` so it leaves a group subtask where it is. Today any update on a sub
 
 A group subtask lives at `todo/<group>/<track>/<id>-<slug>.md`. The `update` command reads the track as the first folder in the path. For a subtask that folder is the group, not the track. So any update — even just `--status` — rewrites `track:` to the group's folder name, moves the file up out of its track folder, and re-indexes it under a new wrong README heading.
 
-This is not rare: the local UI shells out to `update <id> --status` on every Implement run. One run on a group subtask breaks the board. It happened on #14 during a nudge and had to be repaired by hand.
+This is not rare: the local UI shells out to `update <id> --status` on every Implement run. One run on a group subtask breaks the board. It happened on #14 during a refine and had to be repaired by hand.
 
 ## Scope
 

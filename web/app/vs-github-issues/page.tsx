@@ -7,7 +7,7 @@ import { VsComparison } from "@/components/vs-github-issues/VsComparison";
 import { VsWins } from "@/components/vs-github-issues/VsWins";
 import { VsErgonomics } from "@/components/vs-github-issues/VsErgonomics";
 import { VsDecision } from "@/components/vs-github-issues/VsDecision";
-import { BASE_URL } from "@/lib/site";
+import { BASE_URL, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Kanban skill vs. GitHub Issues — a different tool for a different job",
@@ -21,12 +21,14 @@ export const metadata: Metadata = {
     title: "Kanban skill vs. GitHub Issues",
     description:
       "Not a replacement — a different tool for a different bottleneck. A head-to-head on speed, tokens, agents, and teams.",
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Kanban skill vs. GitHub Issues",
     description:
       "Not a replacement — a different tool for a different bottleneck. A head-to-head on speed, tokens, agents, and teams.",
+    images: [OG_IMAGE.url],
   },
 };
 

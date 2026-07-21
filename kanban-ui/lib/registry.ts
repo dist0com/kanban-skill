@@ -40,12 +40,12 @@ const VERB: Record<AgentAction, string> = {
   archive: "archived",
   edit: "edited",
   create: "created",
-  nudge: "nudged",
+  refine: "refined",
   resolve: "resolved",
 };
 
 // A run's action maps to the saved stage it puts the card in while it runs.
-// Only implement sets a status — the rest (edit/nudge/resolve refine the card,
+// Only implement sets a status — the rest (edit/refine/resolve refine the card,
 // create/archive/reject touch no resting card) leave the stage alone.
 const RUN_STATUS: Partial<Record<AgentAction, CardStatus>> = {
   implement: "implementing",
@@ -289,7 +289,7 @@ function adoptFromDisk(s: RegistryState): void {
 // On start-up, fix a stale stage: a card saved as `implementing` whose run no
 // longer exists (the UI crashed mid-run) is reset to `todo`, so the field never
 // gets stuck. Runs still alive were re-adopted above, so they keep their stage.
-// `ready` is a durable resting stage no run owns (nudge sets it), so it's left
+// `ready` is a durable resting stage no run owns (refine sets it), so it's left
 // alone. Best-effort — a board that can't be read just skips this.
 function reconcileStatuses(s: RegistryState): void {
   let cards;

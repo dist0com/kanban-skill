@@ -43,10 +43,10 @@ The board has one **Create task** button. Each card page has its own toolbar:
 
 - **Implement** — do the work and check off the todos.
 - **Edit** — tell the agent how to change the card; it rewrites the plan.
-- **Nudge / Resolve** — one slot that swaps by the card's state. When the card has no open
-  questions it shows **Nudge** (move the plan one step forward). When the card carries open
+- **Refine / Resolve** — one slot that swaps by the card's state. When the card has no open
+  questions it shows **Refine** (move the plan one step forward). When the card carries open
   questions it shows **Resolve** instead (research and answer them) — a card waiting on
-  decisions can't be nudged until the questions are cleared.
+  decisions can't be refined until the questions are cleared.
 - **Archive** — appears once every todo is done; writes the "what you can now do" note and
   removes the card.
 - **Reject** — add a one-line note to `rejected.md` and remove the card.
@@ -55,7 +55,7 @@ The board has one **Create task** button. Each card page has its own toolbar:
 
 Every button starts its agent in the background and returns right away, so you can set work
 going on several cards at once and keep using the board. A small badge marks each card that
-has an agent running and names the action in flight (`implementing`, `nudging`, `resolving`,
+has an agent running and names the action in flight (`implementing`, `refining`, `resolving`,
 …), and you see it in every open tab — not just the one that started the run. The badge stands
 in for the card's saved-stage pill while a run is live: one mark per card, never both.
 
@@ -102,7 +102,7 @@ that card's own most recent run — the panel is the global view.
 
 Each card also remembers its stage in the card file, so it survives a UI restart even when no
 agent is running. The stages, in order, are `todo` → `ready` → `implementing`.
-A **Nudge** that lands a concrete plan with no open questions marks the card `ready` — the
+A **Refine** that lands a concrete plan with no open questions marks the card `ready` — the
 plan is vetted and someone could start now, so you can scan the board for what to build next.
 An **Implement** run marks the card `implementing`; when the run ends without finishing the
 card, the stage goes back to `todo`. A card past `todo` shows a small stage pill on the board

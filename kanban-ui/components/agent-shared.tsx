@@ -42,7 +42,7 @@ export type DialogState =
   | { kind: "reject"; card: Card }
   | { kind: "archive"; card: Card }
   | { kind: "edit"; card: Card }
-  | { kind: "nudge"; card: Card }
+  | { kind: "refine"; card: Card }
   | { kind: "resolve"; card: Card }
   | { kind: "create" }
   | null;
@@ -78,14 +78,14 @@ export function RunningBadge({
 }
 
 // Present-participle label for a live run, so the single mark a card shows while
-// busy names WHICH action is in flight (implementing / nudging / resolving / …)
+// busy names WHICH action is in flight (implementing / refining / resolving / …)
 // instead of a generic "running". The badge always replaces the saved-stage pill
 // (one mark per card, never both), so this is the one place the running action is
-// read — nudge/resolve don't need their own saved status to be visible.
+// read — refine/resolve don't need their own saved status to be visible.
 export const RUNNING_VERB: Record<AgentAction, string> = {
   implement: "implementing",
   edit: "editing",
-  nudge: "nudging",
+  refine: "refining",
   resolve: "resolving",
   reject: "rejecting",
   archive: "archiving",
@@ -300,7 +300,7 @@ export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: 
   }, [onClose]);
 
   // A create run touches no card, so it has no `#id — action` handle: name it by
-  // what it's doing instead. Every other run is tied to a card and reads `#5 — nudge`.
+  // what it's doing instead. Every other run is tied to a card and reads `#5 — refine`.
   const title = !run
     ? "run log"
     : run.cardId === null
@@ -349,7 +349,7 @@ export function ActionDialog({
 
   if (dialog.kind === "implement") {
     // Warn but allow: `ready` means the plan is vetted and safe to build. On any
-    // other stage the card may still be vague, so nudge it a warning — the user
+    // other stage the card may still be vague, so show a warning — the user
     // can still go ahead.
     const notReady = dialog.card.status !== "ready";
     return (
@@ -360,7 +360,7 @@ export function ActionDialog({
         {notReady && (
           <p className="mb-3 rounded-[8px] bg-nb-accent-soft px-3 py-2 text-[12.5px] leading-relaxed text-nb-accent-deep">
             This card isn&apos;t marked <strong>ready</strong> yet — its plan may still be
-            rough. Nudge it to ready first, or implement anyway.
+            rough. Refine it to ready first, or implement anyway.
           </p>
         )}
         <textarea className={INPUT} rows={4} placeholder="Optional extra notes for the agent…" value={text} onChange={(e) => setText(e.target.value)} />
@@ -430,18 +430,18 @@ export function ActionDialog({
     );
   }
 
-  if (dialog.kind === "nudge") {
+  if (dialog.kind === "refine") {
     return (
-      <Dialog title={`Nudge #${dialog.card.id}`} onClose={onClose}>
+      <Dialog title={`Refine #${dialog.card.id}`} onClose={onClose}>
         <p className={INTRO}>
           The agent moves the card one step forward: it reviews the plan, then rewrites it one
           stage — no further. Anything it can&apos;t decide is saved as an open question for you.
         </p>
-        <textarea className={INPUT} rows={3} placeholder="Optional note to steer the nudge…" value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea className={INPUT} rows={3} placeholder="Optional note to steer the refine…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run nudge"
-          onConfirm={() => onRun({ action: "nudge", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Nudge #${dialog.card.id}`)}
+          confirmLabel="Run refine"
+          onConfirm={() => onRun({ action: "refine", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Refine #${dialog.card.id}`)}
         />
       </Dialog>
     );

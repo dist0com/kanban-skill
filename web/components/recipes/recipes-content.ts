@@ -73,7 +73,7 @@ export const recipes: Recipe[] = [
       {
         art: "advance",
         title: "Push top cards forward",
-        body: "Takes your most important cards and nudges each one a step more concrete — turning a fuzzy idea into a clearer, more actionable plan.",
+        body: "Takes your most important cards and refines each one a step more concrete — turning a fuzzy idea into a clearer, more actionable plan.",
       },
       {
         art: "questions",

@@ -9,7 +9,7 @@ import { HkMemory } from "@/components/vs-hermes-kanban/HkMemory";
 import { HkGui } from "@/components/vs-hermes-kanban/HkGui";
 import { HkWins } from "@/components/vs-hermes-kanban/HkWins";
 import { HkDecision } from "@/components/vs-hermes-kanban/HkDecision";
-import { BASE_URL } from "@/lib/site";
+import { BASE_URL, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Kanban skill vs. Hermes Agent Kanban — a lean file-based board vs. a durable runtime",
@@ -23,12 +23,14 @@ export const metadata: Metadata = {
     title: "Kanban skill vs. Hermes Agent Kanban",
     description:
       "Two overlapping agent kanban boards. The kanban skill is a lean, file-based board that runs on any agent (even Hermes); Hermes bundles the same board with a durable, shared queue many named agents work.",
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Kanban skill vs. Hermes Agent Kanban",
     description:
       "Two overlapping agent kanban boards. The kanban skill is a lean, file-based board that runs on any agent (even Hermes); Hermes bundles the same board with a durable, shared queue many named agents work.",
+    images: [OG_IMAGE.url],
   },
 };
 

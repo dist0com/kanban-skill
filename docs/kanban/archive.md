@@ -54,6 +54,8 @@ you don't re-suggest something already done.
 - An archive icon in the header opens one place to browse every agent run — live and past,
   across all cards and actions. It shows the run's input and full log side by side, badges a
   count while runs are live, and keeps the last 30 runs even after you restart the app.
+- The command and button that push a card one step forward are now called Refine — you say
+  "refine #4" or press the Refine button (it used to be Nudge).
 
 ## Distribution
 

@@ -78,7 +78,7 @@ export type AgentAction =
   | "archive"
   | "edit"
   | "create"
-  | "nudge"
+  | "refine"
   | "resolve";
 
 /** A running or finished agent run, as the UI sees it when it polls the

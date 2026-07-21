@@ -25,12 +25,12 @@ mistake. Then it:
 
 ## Push a card forward
 
-Say **"nudge #4"**. The skill first reviews the card (missing steps, missed edge cases,
+Say **"refine #4"**. The skill first reviews the card (missing steps, missed edge cases,
 over-complication, actionability), then rewrites it one stage toward concrete — one stage
 only, stopping before code-level detail — and writes the result back into the card.
 Decisions only you can make land on the card as open questions.
 
-A card with open questions can't be nudged again. Say **"resolve #4"** — the skill
+A card with open questions can't be refined again. Say **"resolve #4"** — the skill
 researches each question, decides the ones the evidence settles, asks you the real
 judgment calls, and clears the list.
 

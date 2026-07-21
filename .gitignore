@@ -9,3 +9,4 @@ docs/kanban/.runs.json
 docs/kanban/.runs/
 
 keyword-research/
+.env

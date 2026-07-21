@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RecipeLanding } from "@/components/recipes/RecipeLanding";
 import { getRecipe, recipes } from "@/components/recipes/recipes-content";
-import { BASE_URL } from "@/lib/site";
+import { BASE_URL, OG_IMAGE } from "@/lib/site";
 
 // Pre-render one static page per recipe (required for `output: export`).
 export function generateStaticParams() {
@@ -31,11 +31,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       siteName: "Kanban skill",
       title: `${recipe.title} — a kanban recipe`,
       description: recipe.tagline,
+      images: [OG_IMAGE],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${recipe.title} — a kanban recipe`,
       description: recipe.tagline,
+      images: [OG_IMAGE.url],
     },
   };
 }

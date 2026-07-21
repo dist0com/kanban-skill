@@ -1,7 +1,7 @@
 ---
 name: kanban
-description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "nudge", "resolve", "dive deeper".
-argument-hint: "[next | add <task> | nudge <id> | resolve <id> | done <id> | reject <id>]"
+description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "refine", "resolve", "dive deeper".
+argument-hint: "[next | add <task> | refine <id> | resolve <id> | done <id> | reject <id>]"
 ---
 
 The task board lives in `docs/kanban/`. Read it before suggesting or adding work.
@@ -116,17 +116,17 @@ whether to proceed or drop it. Never drop a task without asking a question first
 Follow `references/task-review.md`. Reviewing multiple? Spawn one
 subagent per card in parallel.
 
-## Nudge
+## Refine
 
-Take one task and move it one step forward — from vague to concrete. A nudge is two
+Take one task and move it one step forward — from vague to concrete. A refine is two
 substeps: **review** the card (missing steps, missed edge cases, over-complication,
 actionability — yielding open questions for the user and revisions you decide
 yourself), then **rewrite** it (push one stage only, apply the revisions, split off
-side ideas, stop at the code level). A nudge that ends with a concrete plan and no
+side ideas, stop at the code level). A refine that ends with a concrete plan and no
 open questions marks the card `ready` — the user scans for the `ready` pill to pick
-what to implement next. Full guide in `references/nudge.md`.
+what to implement next. Full guide in `references/refine.md`.
 
-A card with unresolved `questions` in its frontmatter can't be nudged — resolve the
+A card with unresolved `questions` in its frontmatter can't be refined — resolve the
 questions first.
 
 ## Resolve open questions

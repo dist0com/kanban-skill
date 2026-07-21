@@ -1,11 +1,11 @@
-# Nudge
+# Refine
 
-Take one task and move it one step forward — from vague to concrete. A nudge is two
+Take one task and move it one step forward — from vague to concrete. A refine is two
 substeps, always in order: **review** the card, then **rewrite** it.
 
-**Gate: open questions block a nudge.** If the card's `questions` frontmatter is not
+**Gate: open questions block a refine.** If the card's `questions` frontmatter is not
 empty, it's waiting on decisions — resolve them first (`references/resolve.md`), then
-nudge once the list is empty.
+refine once the list is empty.
 
 ## 1. Review
 
@@ -19,7 +19,7 @@ hypotheticals.
    memory loses everything on restart — that's a mistake to point out, not a detail.
    Also re-check decisions the card already states — written doesn't mean right.
 3. **Goal fit.** The goal is the card's title and its "so the user can ..." line —
-   not whatever the body's summary has grown into over past nudges. Test each piece
+   not whatever the body's summary has grown into over past refines. Test each piece
    of the plan: would the goal still be met with this piece cut? If yes, it's scope
    creep — cut it or split it off. On-topic is not the test; needed for the goal is.
    The common drift: the goal names one thing ("find a run's log"), the plan builds
@@ -55,7 +55,7 @@ The review's outcome is two lists:
 2. **Apply the revisions** from the review.
 3. **Refresh the todo list.** Tick off every todo the review found already done. If
    every box already matches reality, leave the list as is.
-4. **Split off side ideas.** An idea that came up during the nudge but isn't needed
+4. **Split off side ideas.** An idea that came up during the refine but isn't needed
    for the goal (the goal-fit test — on-topic doesn't count) becomes its own card
    (follow `references/add-task.md`, including its rule against near-duplicate
    splits), not a bullet buried in this one.
@@ -68,26 +68,26 @@ whole plan is easy to start.
 
 ## 3. Mark it ready (when it's done)
 
-A nudge that lands a concrete plan with no open questions has finished the card. Mark
+A refine that lands a concrete plan with no open questions has finished the card. Mark
 it `ready` with `node .claude/skills/kanban/kanban.mjs update <id> --status ready` —
-only when **both** hold: the plan is concrete (this nudge stopped at the code level,
+only when **both** hold: the plan is concrete (this refine stopped at the code level,
 not one stage short) and the `questions` list is empty, so someone could start
 building now. The user scans for the `ready` pill to pick what to implement next.
 
 If the review raised open questions, still rewrite with what you could decide, but
-leave the questions on the card and don't mark it ready — the next nudge is blocked
+leave the questions on the card and don't mark it ready — the next refine is blocked
 until they're resolved. (Recording a question with `update <id> --question` on a card
 that was already `ready` drops it back to `todo` on its own.)
 
 ## Group tasks
 
 A **group task** is a root card plus its subtask cards in one folder (see "Group task"
-in `SKILL.md`). Root and subtasks are one plan split across files, so nudging the
+in `SKILL.md`). Root and subtasks are one plan split across files, so refining the
 `root.md` ripples into them.
 
 After you rewrite the root, bring its subtasks in line with the new plan:
 
-- Re-read each subtask card. Nudge the ones the change touched so their scope, order,
+- Re-read each subtask card. Refine the ones the change touched so their scope, order,
   and blocked-by links still match the root.
 - Drop a subtask the plan no longer needs (reject it); add a card for a new piece it
   now needs (`references/add-task.md`).

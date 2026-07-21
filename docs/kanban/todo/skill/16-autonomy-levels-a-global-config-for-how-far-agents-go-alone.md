@@ -40,7 +40,7 @@ Default: everything off — today's behavior, where open questions wait for the 
 ## Todo
 
 - [ ] Answer the open questions (resolve flow).
-- [ ] Decide how the flows read the levels: nudge/resolve check auto-design,
+- [ ] Decide how the flows read the levels: refine/resolve check auto-design,
       implement checks auto-implement, review/archive check auto-archive, reject
       checks auto-reject.
 - [ ] Write the config format and defaults.

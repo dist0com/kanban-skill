@@ -643,7 +643,7 @@ function cmdUpdate(args) {
 
   // A `ready` card has no open questions by definition (see STATUSES). Adding one
   // means the plan is no longer settled, so drop it back to `todo`. This holds the
-  // invariant no matter who adds the question (nudge review, resolve, the UI).
+  // invariant no matter who adds the question (refine review, resolve, the UI).
   if (meta.questions.length > 0 && meta.status === 'ready') {
     meta.status = 'todo'
     changes.push('status→todo (open questions)')

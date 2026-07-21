@@ -1,8 +1,8 @@
 # Resolve open questions
 
 A card whose `questions` frontmatter is not empty is waiting on decisions. Resolving
-them is the only way to move it forward — a nudge is blocked until the list is empty
-(see `references/nudge.md`).
+them is the only way to move it forward — a refine is blocked until the list is empty
+(see `references/refine.md`).
 
 Work through the questions one at a time:
 
@@ -24,5 +24,5 @@ Work through the questions one at a time:
    - some remain → `update <id> --question "..."` listing only the unanswered ones
      (the flag replaces the whole list).
 
-A card with an emptied `questions` list is nudgeable again. Nudge it next — a nudge
+A card with an emptied `questions` list is refinable again. Refine it next — a refine
 is what can mark the card `ready` once the plan is concrete.
