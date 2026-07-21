@@ -29,8 +29,15 @@ function recipeRoutes(): string[] {
   return ["/recipes/", ...recipes.map((r) => `/recipes/${r.slug}/`)];
 }
 
+// Markdown mirrors of the landing routes — a plain-Markdown twin of each page,
+// served as a static file from `public/` (`/` → `/index.md`, `/vs-x/` →
+// `/vs-x.md`). Listed so AI crawlers and llms.txt consumers can discover them.
+function markdownMirrors(): string[] {
+  return ["/index.md", ...vsRoutes().map((r) => `${r.replace(/\/$/, "")}.md`)];
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["/", ...recipeRoutes(), ...vsRoutes()];
+  const routes = ["/", ...recipeRoutes(), ...vsRoutes(), ...markdownMirrors()];
 
   return routes.map((route) => ({
     url: `${BASE_URL}${route}`,

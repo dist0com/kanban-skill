@@ -26,9 +26,6 @@ export const metadata: Metadata = {
       "Claude proposes the next work, writes the cards, and archives what's done. You steer the backlog in plain language, straight from your terminal.",
     images: [OG_IMAGE.url],
   },
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>",
-  },
   verification: {
     google: "QVTStPZuK-LT8pPMpHaVrFmpfTGz1Q-zqmdKpkTK8d0",
   },
@@ -41,6 +38,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Send *.pages.dev visitors to the custom domain. Raw inline script so
+            it runs during HTML parse (no flash, no dependency on the JS bundle).
+            Guarded on hostname so it never loops on kanbanskill.cc or localhost.
+            Canonical tags handle SEO; this just shepherds human visitors. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(location.hostname.endsWith(".pages.dev")){location.replace("https://kanbanskill.cc"+location.pathname+location.search+location.hash)}`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

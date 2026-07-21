@@ -3,6 +3,11 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Serve the Markdown page mirrors and recipe cards as UTF-8 text so AI crawlers
+# (and browsers) render them inline instead of prompting a download.
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 

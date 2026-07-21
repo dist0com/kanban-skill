@@ -6,7 +6,7 @@ export const BASE_URL = "https://kanbanskill.cc";
 // captured PNG is served from the CDN and referenced by every page's OG/Twitter
 // tags. Re-capture `/og-image/` and re-upload when the card design changes.
 export const OG_IMAGE = {
-  url: "https://cdn.kanbanskill.cc/og-image.png",
+  url: "https://cdn.kanbanskill.cc/og-image.jpg",
   width: 4800,
   height: 2520,
   alt: "Kanban skill — your task board in Markdown, right next to your code.",
