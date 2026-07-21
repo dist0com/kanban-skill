@@ -12,12 +12,16 @@ _(none)_
 ## features
 
 - [#22 Open-questions notification center in the header](features/22-open-questions-notification-center-in-the-header.md)
+- [#25 Show on the board which cards you can't start yet](features/25-show-on-the-board-which-cards-you-can-t-start-yet.md)
+- [#26 A ready-only focus toggle for the board](features/26-a-ready-only-focus-toggle-for-the-board.md)
+- [#27 Auto-refresh every open view when a background run finishes](features/27-auto-refresh-every-open-view-when-a-background-run-finishes.md)
+- [#28 Continue a run's conversation instead of copying its id](features/28-continue-a-run-s-conversation-instead-of-copying-its-id.md)
+- [#29 Show only the control buttons that fit the card's state](features/29-show-only-the-control-buttons-that-fit-the-card-s-state.md)
 
 ## skill
 
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
-- [#19 Script update on a group subtask moves the card and breaks its track](skill/19-script-update-on-a-group-subtask-moves-the-card-and-breaks-i.md)
 
 ## docs
 

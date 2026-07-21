@@ -459,6 +459,33 @@ function addReadmeRef(track, id, title, relPath) {
   return true
 }
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Fix a README link to task #id in place, after a subtask rename or retitle. A
+// subtask's only README line is the nested bullet under its group root, so the
+// bullet keeps its position — only the link text and target change. No-op when
+// the README doesn't link the card.
+function repointReadmeLink(id, oldRel, newRel, title) {
+  if (!fs.existsSync(README)) return false
+  const oldLink = oldRel.split(path.sep).join('/')
+  const newLink = newRel.split(path.sep).join('/')
+  const linkRe = new RegExp(`\\[#${id}\\b[^\\]]*\\]\\(${escapeRegex(oldLink)}\\)`)
+  const lines = fs.readFileSync(README, 'utf8').split('\n')
+  let changed = false
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].includes(`](${oldLink})`)) continue
+    const next = linkRe.test(lines[i])
+      ? lines[i].replace(linkRe, () => `[#${id} ${title}](${newLink})`)
+      : lines[i].split(`](${oldLink})`).join(`](${newLink})`)
+    if (next !== lines[i]) {
+      lines[i] = next
+      changed = true
+    }
+  }
+  if (changed) fs.writeFileSync(README, lines.join('\n'))
+  return changed
+}
+
 // ---- init ------------------------------------------------------------------
 
 // Default tracks when `init` is run with no track args. Swap by passing your own,
@@ -649,11 +676,17 @@ function cmdUpdate(args) {
     changes.push('status→todo (open questions)')
   }
 
+  // A card's track is the folder its file sits in — right for a standalone card
+  // (skill/06 → skill), a group subtask (<group>/skill/21 → skill), a blocker,
+  // and a recurring card alike. A group root's own folder is the group, not a
+  // track, so its frontmatter value stands.
   const curRel = path.relative(TODO, file)
-  const curTrack = curRel.split(path.sep)[0]
+  const curTrack = found.kind === 'group' ? meta.track : path.basename(path.dirname(file))
+  const isSubtask = found.kind === 'file' && enclosingGroupRoot(file) !== null
   let newTrack = curTrack
   if (flags.track !== undefined) {
     if (found.kind === 'group') die('moving a group task between tracks by script is not supported — move the folder by hand')
+    if (isSubtask) die('moving a group subtask between tracks by script is not supported — move the file by hand')
     newTrack = String(flags.track).trim()
     validTrack(newTrack)
   }
@@ -663,14 +696,21 @@ function cmdUpdate(args) {
     base = `${id}-${slugify(flags.slug)}.md`
   }
   meta.track = newTrack
-  const destRel = path.join(newTrack, base)
+  // Only a standalone card can change folders (--track). A subtask and a group
+  // root stay in their own folder; --slug at most renames the file there.
+  const standalone = found.kind === 'file' && !isSubtask
+  const destRel = standalone ? path.join(newTrack, base) : path.join(path.dirname(curRel), base)
   const dest = path.join(TODO, destRel)
   const moving = dest !== file
   if (moving && fs.existsSync(dest)) die(`${rel(dest)} already exists`)
 
   fs.writeFileSync(file, serializeFrontmatter(meta) + '\n' + body)
-  if (moving) {
-    fs.renameSync(file, dest)
+  if (moving) fs.renameSync(file, dest)
+  if (isSubtask) {
+    // A subtask never owns a top-level README entry — fix its nested bullet in place.
+    if (moving || changes.includes('title')) repointReadmeLink(id, curRel, destRel, meta.title)
+    if (moving) changes.push(`renamed → ${destRel.split(path.sep).join('/')}`)
+  } else if (moving) {
     stripReadmeRefs({ kind: 'file', rel: curRel })
     addReadmeRef(newTrack, id, meta.title, destRel)
     changes.push(`moved → ${destRel.split(path.sep).join('/')}`)

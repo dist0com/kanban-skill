@@ -1,18 +1,20 @@
-# Propose the next things to do
+# Propose new tasks
 
-Each loop: pick **one focus area**, then propose **3 new tasks inside it**. New work,
-not picks from the board.
+Run this when the user asks to propose work. Pick **one focus area**, then propose
+**3 new tasks inside it**. New work, not picks from the board.
 
 Why one focus: three scattered ideas skim the whole product; three tasks in one area
-close its gap. Next loop, pick a different focus.
+close its gap.
 
 ## 1. Pick the focus
 
 One area — a product area, a track, or a theme (e.g. "the local UI", "onboarding").
-In this order:
 
-- the area the user named, if any;
-- else the area that changed most since last review (`git log` vs. the watermarks in
+**Always ask the user which area they want to improve first.** They can skip it, but an
+area from them beats one you guess. If they name an area, use it. If they leave it open,
+pick one yourself, in this order:
+
+- the area that changed most since last review (`git log` vs. the watermarks in
   `memory.md`);
 - else the area where `memory.md` says users stumble most.
 

@@ -10,8 +10,9 @@ refines rough ideas into concrete ones, and archives what ships. You steer in pl
 and review before anything is built. The board itself is plain Markdown in `docs/kanban/` —
 local, in git, no database, no MCP.
 
-- **The agent works the board** — say "what's next?" and it reads your code, board, and
-  notes, then proposes the next tasks and writes the cards for you
+- **The agent works the board** — say "propose new tasks" and it walks your code, board,
+  and notes to draft fresh cards for work nobody's planned; from there you refine, review,
+  and archive in plain language
 - **Built for how agents work** — cards are files, so the agent greps them in one local
   call instead of paging a remote API; any file-reading agent can drive it, Cursor and
   Codex included
@@ -41,7 +42,7 @@ Drive it in plain language — the skill triggers on these:
 
 | You say | Claude does |
 | --- | --- |
-| "what's next?" | reads the board + your sources, proposes 3 new tasks |
+| "propose new tasks" | walks one focus area and drafts new cards for work nobody's planned |
 | "add a task: …" | reviews the idea, writes a card, adds it to the index |
 | "refine #4" | reviews card #4 and makes it one step more concrete |
 | "resolve #4" | works through card #4's open questions with you |

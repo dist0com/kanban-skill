@@ -1,7 +1,7 @@
 ---
 name: kanban
-description: Use to pick the next things to work on, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "what's next", "next thing to do", "add a task", "what's on the backlog", "this is done", "refine", "resolve", "dive deeper".
-argument-hint: "[next | add <task> | refine <id> | resolve <id> | done <id> | reject <id>]"
+description: Use to propose new tasks, add a task, mark one done, or push a task one step forward. Manages the file-based task board in docs/kanban/ — blockers, roadmap tracks, archive, and global task ids. Triggers on "propose new tasks", "what's on the backlog", "add a task", "this is done", "refine", "resolve", "dive deeper".
+argument-hint: "[propose | add <task> | refine <id> | resolve <id> | done <id> | reject <id>]"
 ---
 
 The task board lives in `docs/kanban/`. Read it before suggesting or adding work.
@@ -83,14 +83,11 @@ card **body** (summary, scope, todos).
 Every task's id is the number at the front of its filename (`04-plan-cap-enforcement.md` →
 id 4). Ids are global and never reused; only the script's `create` allocates them.
 
-## Propose the next things to do
+## Propose new tasks
 
-Each loop picks **one focus area** and proposes **3 new tasks inside it** — work nobody
-has planned yet. Ideas come from walking a user story in that area step by step and
-noting every stumble, not from a roadmap. Don't scatter three unrelated ideas; dig one
-area deep so its gap actually closes, and pick a different focus next loop. Keep what you
-learn in `docs/kanban/memory.md` so the next loop builds on it. Full guide in
-`references/propose.md`.
+When the user asks to propose work ("propose new tasks", "propose work in <area>", "dive
+deeper"), pick **one focus area** and propose **3 new tasks inside it** — work nobody has
+planned yet. Full guide in `references/propose.md`.
 
 ## Add a task
 

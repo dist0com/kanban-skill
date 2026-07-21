@@ -203,6 +203,24 @@ function readArchive(): ArchiveGroup[] {
     .filter((g) => g.markdown.length > 0);
 }
 
+// Pick-order for a column: the best card to start next sorts first. Vetted
+// `ready` cards lead, `implementing` (already in flight) follows, raw `todo`
+// last; then priority, then roi. Unranked (empty/unknown) sorts after ranked.
+const STATUS_RANK: Record<string, number> = { ready: 0, implementing: 1, todo: 2 };
+const LEVEL_RANK: Record<string, number> = { high: 0, med: 1, low: 2 };
+
+const rank = (table: Record<string, number>, value: string): number =>
+  table[value] ?? Object.keys(table).length;
+
+function byPickOrder(a: Card, b: Card): number {
+  return (
+    rank(STATUS_RANK, a.status) - rank(STATUS_RANK, b.status) ||
+    rank(LEVEL_RANK, a.priority) - rank(LEVEL_RANK, b.priority) ||
+    rank(LEVEL_RANK, a.roi) - rank(LEVEL_RANK, b.roi) ||
+    a.id - b.id
+  );
+}
+
 export function readBoard(): Board {
   const { board, every } = collectCards();
   // Bucket the board cards by their frontmatter track, then lay the columns out
@@ -217,7 +235,7 @@ export function readBoard(): Board {
   const columns: Column[] = orderedTracks().map(({ track, title }) => ({
     track,
     title,
-    cards: (byTrack.get(track) ?? []).sort((a, b) => a.id - b.id),
+    cards: (byTrack.get(track) ?? []).sort(byPickOrder),
   }));
   // Linkify every open id, subtasks included — not just the cards the columns show.
   const openIds = Array.from(new Set(every.map((card) => card.id)));

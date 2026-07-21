@@ -26,6 +26,8 @@ you don't re-suggest something already done.
   (frontmatter + body template + README entry), `update <id>` changes priority/roi/links,
   moves a card between tracks, or renames it, and `migrate` converts an old-format board.
   Every value is validated, so a bad track, level, or invented id is refused up front.
+- Updating a subtask inside a group task now leaves the card where it is. Before, any
+  update quietly moved the file out of its group and rewrote its track, breaking the board.
 
 ## Local board UI
 
@@ -56,6 +58,8 @@ you don't re-suggest something already done.
   count while runs are live, and keeps the last 30 runs even after you restart the app.
 - The command and button that push a card one step forward are now called Refine — you say
   "refine #4" or press the Refine button (it used to be Nudge).
+- Each board column now shows the best card to start next at the top: ready cards first,
+  then ones in flight, then the rest by priority and ROI — instead of oldest-id-first.
 
 ## Distribution
 
