@@ -31,7 +31,7 @@ commands):
 
 ```
 Set up the kanban skill for this project. Read
-https://raw.githubusercontent.com/dist0com/kanban-skill/main/INSTALL_PROMPT.txt
+https://kanbanskill.cc/INSTALL_PROMPT.txt
 and follow it.
 ```
 

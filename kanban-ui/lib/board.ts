@@ -138,7 +138,7 @@ export function findCard(id: number): Card | null {
 }
 
 // Every open card, subtasks included. Used to reconcile a stale `status` on
-// server start-up (a card left `implementing` by a run that no longer exists).
+// server start-up (a card left `implementing` by a session that no longer exists).
 export function allCards(): Card[] {
   return collectCards().every;
 }

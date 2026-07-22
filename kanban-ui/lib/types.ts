@@ -5,8 +5,8 @@ export type Level = "high" | "med" | "low";
 /** The stage a card rests in, saved on the card so it survives a UI restart.
  *  In order: `todo` (raw), `ready` (plan concrete, no open questions, someone
  *  could start now), `implementing`. `reject`/`archive` remove the card, so they
- *  are not statuses — a live run's action is tracked in the run registry, not
- *  here. */
+ *  are not statuses — a live session's action is tracked in the session
+ *  registry, not here. */
 export type CardStatus = "todo" | "ready" | "implementing";
 
 export interface CardMeta {
@@ -81,41 +81,46 @@ export type AgentAction =
   | "refine"
   | "resolve";
 
-/** A running or finished agent run, as the UI sees it when it polls the
+/** A running or finished agent session, as the UI sees it when it polls the
  *  server-side registry. One shared picture across every tab. */
-export interface RunView {
-  runId: string;
-  /** The card this run touches, or null for `create` (no card yet). */
+export interface SessionView {
+  /** This session's unique id. For a Claude Code agent it IS Claude Code's own
+   *  session id — pinned up front via `claude --session-id` — so the "resume in
+   *  claude code" handoff copies it straight (`claude --resume <id>`). For a
+   *  custom agent it's a generated id: still unique, just not resumable (see
+   *  `resumable`). */
+  sessionId: string;
+  /** The card this session touches, or null for `create` (no card yet). */
   cardId: number | null;
   action: AgentAction;
   status: "running" | "done" | "error";
   startedAt: number;
   endedAt?: number;
-  /** The text the user typed for this run — a create's description, an action's
-   *  notes, or a reject's reason. Shown in the global runs panel (#21); absent
-   *  when the run carried no note. */
+  /** The text the user typed for this session — a create's description, an
+   *  action's notes, or a reject's reason. Shown in the global sessions panel
+   *  (#21); absent when the session carried no note. */
   input?: string;
-  /** Exit was clean. Set once the run reaches a terminal state. */
+  /** Exit was clean. Set once the session reaches a terminal state. */
   ok?: boolean;
   code?: number | null;
   /** Spawn/child error message, if any. */
   error?: string;
-  /** Terminal run whose exit code we never learned — it was still running when
-   *  the UI restarted and finished out of our sight. Shown as finished with no
-   *  pass/fail mark: don't guess an outcome we never saw. */
+  /** Terminal session whose exit code we never learned — it was still running
+   *  when the UI restarted and finished out of our sight. Shown as finished with
+   *  no pass/fail mark: don't guess an outcome we never saw. */
   outcomeUnknown?: boolean;
-  /** The agent's final message, parsed from its event stream. Terminal runs
+  /** The agent's final message, parsed from its event stream. Terminal sessions
    *  only. When present the UI leads with it and folds the event tail away;
-   *  absent (custom agent command, or a run re-adopted after a UI restart)
+   *  absent (custom agent command, or a session re-adopted after a UI restart)
    *  the tail is all there is. */
   result?: string;
-  /** Claude Code's session id for this run. Lets the UI copy a handoff id so the
-   *  conversation can be resumed in claude code (`claude --resume <id>`). Absent
-   *  for a custom (non-claude) command that emits no session id. */
-  sessionId?: string;
-  /** Tail of the run's output (last few KB). The board-wide poll attaches it
-   *  only to terminal runs; getRun() attaches it for any run — live or done —
-   *  by reading the log file, so the UI can tail a running agent. */
+  /** True when this session runs the Claude Code CLI, so its `sessionId` is a
+   *  real Claude Code session the UI can offer to resume. False for a custom
+   *  (non-claude) command — the id is unique but there's nothing to resume. */
+  resumable?: boolean;
+  /** Tail of the session's output (last few KB). The board-wide poll attaches it
+   *  only to terminal sessions; getSession() attaches it for any session — live
+   *  or done — by reading the log file, so the UI can tail a running agent. */
   tail?: string;
 }
 

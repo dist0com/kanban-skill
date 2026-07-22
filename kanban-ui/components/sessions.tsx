@@ -1,32 +1,33 @@
 "use client";
 
-// Shared client plumbing for the run registry (task #12). Both the board and the
-// card page use it to: poll the server-side registry, know which cards have a
-// live agent, start a run without blocking, and get told when a run they started
-// finishes (to show its result and refresh). It also hosts the global runs panel
-// (task #21) — the header's activity button and its two-pane history dialog.
+// Shared client plumbing for the session registry (task #12). Both the board and
+// the card page use it to: poll the server-side registry, know which cards have a
+// live agent, start a session without blocking, and get told when a session they
+// started finishes (to show its result and refresh). It also hosts the global
+// sessions panel (task #21) — the header's activity button and its two-pane
+// history dialog.
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { FiActivity, FiX } from "react-icons/fi";
-import { getRunAction, listRunsAction, startAgentAction } from "@/app/actions";
-import type { RunView } from "@/lib/types";
-import { type AgentReq, HandoffButton, RunLog } from "./agent-shared";
+import { getSessionAction, listSessionsAction, startAgentAction } from "@/app/actions";
+import type { SessionView } from "@/lib/types";
+import { type AgentReq, HandoffButton, SessionLog } from "./agent-shared";
 
 const POLL_MS = 1500;
 const LOG_POLL_MS = 1200; // how often the live log tail refreshes
 
-// A run this tab started, remembered until it finishes so onFinish can fire once.
-export interface StartedRun {
-  runId: string;
+// A session this tab started, remembered until it finishes so onFinish can fire once.
+export interface StartedSession {
+  sessionId: string;
   label: string;
   // reject/archive remove the card — on success we navigate home, not refresh.
   removes: boolean;
 }
 
-export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => void) {
-  const [runs, setRuns] = useState<RunView[]>([]);
-  const mine = useRef<Map<string, StartedRun>>(new Map());
+export function useAgentSessions(onFinish: (session: SessionView, started: StartedSession) => void) {
+  const [sessions, setSessions] = useState<SessionView[]>([]);
+  const mine = useRef<Map<string, StartedSession>>(new Map());
   // Keep onFinish in a ref so the poll effect doesn't restart when the page
   // passes a fresh closure each render.
   const finishRef = useRef(onFinish);
@@ -35,11 +36,12 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
   // poll and wake the loop when it's dormant. See the effect below.
   const kickRef = useRef<() => void>(() => {});
 
-  // The registry only changes when a run starts or finishes, and runs only start
-  // from a user action — so a quiet board can't go stale on its own. Instead of
-  // polling forever, we poll only while there's something to watch (a live run or
-  // a run this tab just started) and go dormant otherwise, waking on tab focus to
-  // catch anything another tab did. Idle traffic drops to zero.
+  // The registry only changes when a session starts or finishes, and sessions
+  // only start from a user action — so a quiet board can't go stale on its own.
+  // Instead of polling forever, we poll only while there's something to watch (a
+  // live session or a session this tab just started) and go dormant otherwise,
+  // waking on tab focus to catch anything another tab did. Idle traffic drops to
+  // zero.
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -49,18 +51,18 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
       if (!alive || inFlight) return;
       inFlight = true;
       try {
-        const next = await listRunsAction();
+        const next = await listSessionsAction();
         if (!alive) return;
-        // Fire onFinish for any run this tab started that just went terminal.
+        // Fire onFinish for any session this tab started that just went terminal.
         for (const r of next) {
-          const started = mine.current.get(r.runId);
+          const started = mine.current.get(r.sessionId);
           if (started && r.status !== "running") {
-            mine.current.delete(r.runId);
+            mine.current.delete(r.sessionId);
             finishRef.current(r, started);
           }
         }
-        setRuns(next);
-        // Keep polling only while a run is live or this tab is awaiting one; a
+        setSessions(next);
+        // Keep polling only while a session is live or this tab is awaiting one; a
         // hidden tab stops entirely and resumes on focus.
         const busy =
           next.some((r) => r.status === "running") || mine.current.size > 0;
@@ -69,7 +71,7 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
           timer = setTimeout(tick, POLL_MS);
         }
       } catch {
-        // transient — retry only if we're still awaiting a run of our own
+        // transient — retry only if we're still awaiting a session of our own
         if (alive && mine.current.size > 0 && document.visibilityState === "visible") {
           clearTimeout(timer);
           timer = setTimeout(tick, POLL_MS);
@@ -97,12 +99,13 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
     };
   }, []);
 
-  // Start a run. Returns the server's answer: ok with a runId, or a lock message.
+  // Start a session. Returns the server's answer: ok with a sessionId, or a lock
+  // message.
   const start = useCallback(
     async (req: AgentReq, label: string, removes = false) => {
       const res = await startAgentAction(req);
-      if (res.ok && res.runId) {
-        mine.current.set(res.runId, { runId: res.runId, label, removes });
+      if (res.ok && res.sessionId) {
+        mine.current.set(res.sessionId, { sessionId: res.sessionId, label, removes });
         kickRef.current(); // watch it immediately instead of waiting for a tick
       }
       return res;
@@ -110,41 +113,42 @@ export function useAgentRuns(onFinish: (run: RunView, started: StartedRun) => vo
     [],
   );
 
-  return { runs, start };
+  return { sessions, start };
 }
 
 // Card ids that currently have a running agent (from any tab).
-export function runningCardIds(runs: RunView[]): Set<number> {
+export function runningCardIds(sessions: SessionView[]): Set<number> {
   const ids = new Set<number>();
-  for (const r of runs) {
+  for (const r of sessions) {
     if (r.status === "running" && r.cardId !== null) ids.add(r.cardId);
   }
   return ids;
 }
 
-// The newest run (live or finished) that touched this card, so the card page can
-// tail the live one and re-open the last finished one from the same slot.
-export function latestRunForCard(runs: RunView[], cardId: number): RunView | undefined {
-  let best: RunView | undefined;
-  for (const r of runs) {
+// The newest session (live or finished) that touched this card, so the card page
+// can tail the live one and re-open the last finished one from the same slot.
+export function latestSessionForCard(sessions: SessionView[], cardId: number): SessionView | undefined {
+  let best: SessionView | undefined;
+  for (const r of sessions) {
     if (r.cardId === cardId && (!best || r.startedAt > best.startedAt)) best = r;
   }
   return best;
 }
 
-// The live run on this card, if any (used to open its log from a board badge).
-export function runningRunForCard(runs: RunView[], cardId: number): RunView | undefined {
-  return runs.find((r) => r.status === "running" && r.cardId === cardId);
+// The live session on this card, if any (used to open its log from a board badge).
+export function runningSessionForCard(sessions: SessionView[], cardId: number): SessionView | undefined {
+  return sessions.find((r) => r.status === "running" && r.cardId === cardId);
 }
 
-// Tail one run's log. Polls getRunAction while the run is live (task #14 reuses
-// the poll channel — no SSE, matching the run badges), then fetches once more
-// when it ends and stops. Pass null to watch nothing. Returns the run with its
-// log tail, or null while it hasn't loaded / the run is unknown.
-export function useRunLog(runId: string | null): RunView | null {
-  const [log, setLog] = useState<RunView | null>(null);
+// Tail one session's log. Polls getSessionAction while the session is live (task
+// #14 reuses the poll channel — no SSE, matching the session badges), then
+// fetches once more when it ends and stops. Pass null to watch nothing. Returns
+// the session with its log tail, or null while it hasn't loaded / the session is
+// unknown.
+export function useSessionLog(sessionId: string | null): SessionView | null {
+  const [log, setLog] = useState<SessionView | null>(null);
   useEffect(() => {
-    if (!runId) {
+    if (!sessionId) {
       setLog(null);
       return;
     }
@@ -152,10 +156,10 @@ export function useRunLog(runId: string | null): RunView | null {
     let timer: ReturnType<typeof setTimeout>;
     const tick = async () => {
       try {
-        const r = await getRunAction(runId);
+        const r = await getSessionAction(sessionId);
         if (!alive) return;
         setLog(r);
-        // Keep polling only while the run is live; a terminal run's tail is final.
+        // Keep polling only while the session is live; a terminal tail is final.
         if (r && r.status === "running") timer = setTimeout(tick, LOG_POLL_MS);
       } catch {
         if (alive) timer = setTimeout(tick, LOG_POLL_MS);
@@ -166,16 +170,16 @@ export function useRunLog(runId: string | null): RunView | null {
       alive = false;
       clearTimeout(timer);
     };
-  }, [runId]);
+  }, [sessionId]);
   return log;
 }
 
-// --- the global runs panel (task #21) ---------------------------------------
+// --- the global sessions panel (task #21) -----------------------------------
 
 // A tiny shared store so the header's Create button (a sibling component) can pop
-// the runs panel open on the run it just started — without threading state
-// through the server-rendered Header. One store per browser tab; the panel's
-// open/selected state lives here so any header control can drive it.
+// the sessions panel open on the session it just started — without threading
+// state through the server-rendered Header. One store per browser tab; the
+// panel's open/selected state lives here so any header control can drive it.
 type PanelState = { open: boolean; selected: string | null };
 let panelState: PanelState = { open: false, selected: null };
 const panelSubs = new Set<() => void>();
@@ -183,10 +187,10 @@ function setPanel(next: PanelState) {
   panelState = next;
   for (const fn of panelSubs) fn();
 }
-export const runsPanel = {
-  // Open the panel; optionally select a run (e.g. the create just started). A
+export const sessionsPanel = {
+  // Open the panel; optionally select a session (e.g. the create just started). A
   // missing selection keeps whatever was selected, so the panel defaults to the
-  // newest run (see RunsDialog).
+  // newest session (see SessionsDialog).
   open(selected?: string | null) {
     setPanel({ open: true, selected: selected ?? panelState.selected });
   },
@@ -196,8 +200,8 @@ export const runsPanel = {
   toggle() {
     setPanel({ open: !panelState.open, selected: panelState.selected });
   },
-  select(runId: string) {
-    setPanel({ open: true, selected: runId });
+  select(sessionId: string) {
+    setPanel({ open: true, selected: sessionId });
   },
 };
 function usePanelState(): PanelState {
@@ -211,8 +215,9 @@ function usePanelState(): PanelState {
   );
 }
 
-// A relative "2m ago" for the run list; an absolute stamp for the detail header.
-// Both read the clock at render — fine, the poll re-renders while runs are live.
+// A relative "2m ago" for the session list; an absolute stamp for the detail
+// header. Both read the clock at render — fine, the poll re-renders while
+// sessions are live.
 function relTime(ts: number): string {
   const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
   if (s < 45) return "just now";
@@ -231,11 +236,11 @@ function fullTime(ts: number): string {
   });
 }
 
-// The status dot shown against each run in the list: a pulsing ember while live,
-// mint when it passed, peach when it failed, neutral when the outcome is unknown
-// (a run that outlived a UI restart — see registry).
-function RunDot({ run }: { run: RunView }) {
-  if (run.status === "running") {
+// The status dot shown against each session in the list: a pulsing ember while
+// live, mint when it passed, peach when it failed, neutral when the outcome is
+// unknown (a session that outlived a UI restart — see registry).
+function SessionDot({ session }: { session: SessionView }) {
+  if (session.status === "running") {
     return (
       <span
         className="size-[8px] shrink-0 rounded-full bg-nb-accent-deep animate-[nbPulse_1.1s_ease-in-out_infinite]"
@@ -243,30 +248,30 @@ function RunDot({ run }: { run: RunView }) {
       />
     );
   }
-  const tone = run.outcomeUnknown ? "bg-nb-ink-soft" : run.ok ? "bg-nb-mint" : "bg-nb-peach";
+  const tone = session.outcomeUnknown ? "bg-nb-ink-soft" : session.ok ? "bg-nb-mint" : "bg-nb-peach";
   return <span className={`size-[8px] shrink-0 rounded-full ${tone}`} aria-hidden />;
 }
 
-// The header entry point to the run history (task #21): one activity-icon button.
-// While any run is live it wears an iOS-style badge — a small ember circle with
-// the count of running runs and a ping pulse. Clicking opens the two-pane dialog.
-// The panel is GLOBAL: every run, every card and every action, newest first —
-// the one place to browse across runs (a per-card page still shows only its own
-// most recent run; see redesign.md).
-export function Runs() {
+// The header entry point to the session history (task #21): one activity-icon
+// button. While any session is live it wears an iOS-style badge — a small ember
+// circle with the count of running sessions and a ping pulse. Clicking opens the
+// two-pane dialog. The panel is GLOBAL: every session, every card and every
+// action, newest first — the one place to browse across sessions (a per-card
+// page still shows only its own most recent session; see redesign.md).
+export function Sessions() {
   // Poll the shared registry for the picture every tab sees. This instance never
-  // starts a run, so its onFinish never fires — pass a no-op.
-  const { runs } = useAgentRuns(() => {});
+  // starts a session, so its onFinish never fires — pass a no-op.
+  const { sessions } = useAgentSessions(() => {});
   const panel = usePanelState();
-  const runningCount = runs.reduce((n, r) => n + (r.status === "running" ? 1 : 0), 0);
+  const runningCount = sessions.reduce((n, r) => n + (r.status === "running" ? 1 : 0), 0);
 
   return (
     <>
       <button
         type="button"
-        onClick={() => runsPanel.toggle()}
-        title="run history"
-        aria-label="Run history"
+        onClick={() => sessionsPanel.toggle()}
+        title="session history"
+        aria-label="Session history"
         // Ghost sticker button (design.md .nb-cta-ghost): paper fill, solid ink
         // border, hard offset shadow, press-down. Matched pair with the agent
         // badge; both are the quiet siblings of the accent Create-task CTA.
@@ -289,42 +294,43 @@ export function Runs() {
           </span>
         )}
       </button>
-      {panel.open && <RunsDialog runs={runs} />}
+      {panel.open && <SessionsDialog sessions={sessions} />}
     </>
   );
 }
 
-// The two-pane dialog: run list on the left, the selected run's input + log tail
-// on the right. Portaled to <body> like Dialog/RunLogOverlay so the blurred,
-// backdrop-filtered header can't become the scrim's containing block and trap it.
-// Mounts only while open, so the selected run's log is tailed only when visible.
-function RunsDialog({ runs }: { runs: RunView[] }) {
+// The two-pane dialog: session list on the left, the selected session's input +
+// log tail on the right. Portaled to <body> like Dialog/SessionLogOverlay so the
+// blurred, backdrop-filtered header can't become the scrim's containing block and
+// trap it. Mounts only while open, so the selected session's log is tailed only
+// when visible.
+function SessionsDialog({ sessions }: { sessions: SessionView[] }) {
   const panel = usePanelState();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") runsPanel.close();
+      if (e.key === "Escape") sessionsPanel.close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Newest first. Default the selection to the newest run when none is set, so
-  // the panel always opens on something.
-  const ordered = [...runs].sort((a, b) => b.startedAt - a.startedAt);
-  const selectedId = panel.selected ?? ordered[0]?.runId ?? null;
-  const selected = ordered.find((r) => r.runId === selectedId) ?? null;
-  // Tail the selected run's log from the file — live while running, one fetch
-  // when done. The list entry carries the input and (for finished runs) the tail,
-  // so the pane fills in before the tail loads.
-  const log = useRunLog(selectedId);
+  // Newest first. Default the selection to the newest session when none is set,
+  // so the panel always opens on something.
+  const ordered = [...sessions].sort((a, b) => b.startedAt - a.startedAt);
+  const selectedId = panel.selected ?? ordered[0]?.sessionId ?? null;
+  const selected = ordered.find((r) => r.sessionId === selectedId) ?? null;
+  // Tail the selected session's log from the file — live while running, one fetch
+  // when done. The list entry carries the input and (for finished sessions) the
+  // tail, so the pane fills in before the tail loads.
+  const log = useSessionLog(selectedId);
   const input = (log?.input ?? selected?.input ?? "").trim();
 
   if (!mounted) return null;
 
   return createPortal(
-    <div className="nb-scrim" style={{ alignItems: "center" }} onClick={() => runsPanel.close()}>
+    <div className="nb-scrim" style={{ alignItems: "center" }} onClick={() => sessionsPanel.close()}>
       <div
         // overflow-hidden clips the list column's edge-to-edge cream fill to the
         // panel radius — without it the square fill pokes past the rounded corner.
@@ -333,9 +339,9 @@ function RunsDialog({ runs }: { runs: RunView[] }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b-[1.5px] border-nb-ink px-5 py-3">
-          <h2 className="text-[15px] font-[800] tracking-[-0.02em]">Runs</h2>
+          <h2 className="text-[15px] font-[800] tracking-[-0.02em]">Sessions</h2>
           <button
-            onClick={() => runsPanel.close()}
+            onClick={() => sessionsPanel.close()}
             aria-label="Close"
             className="-mr-1 grid h-7 w-7 cursor-pointer place-items-center rounded-[6px] text-nb-ink-soft transition-[transform,background-color,color] duration-100 hover:bg-nb-ink/5 hover:text-nb-ink active:scale-90 active:bg-nb-ink/10"
           >
@@ -344,29 +350,29 @@ function RunsDialog({ runs }: { runs: RunView[] }) {
         </div>
 
         <div className="flex min-h-0 flex-1">
-          {/* left: the run list. A faint cream canvas behind the rows so the
-              selected run — paper fill + ember edge, the vertical cousin of the
-              tab strip's "bold ink + short ember underline" — reads as the one
+          {/* left: the session list. A faint cream canvas behind the rows so the
+              selected session — paper fill + ember edge, the vertical cousin of
+              the tab strip's "bold ink + short ember underline" — reads as the one
               raised sheet. The divider is a soft ink hairline, not a full ink
               rule: 1.5px ink borders stay reserved for structural frames. */}
           <div className="w-[240px] shrink-0 overflow-y-auto border-r border-nb-ink/10 bg-nb-cream/70">
             {ordered.length === 0 ? (
-              <p className="p-4 text-[12.5px] text-nb-ink-soft">No runs yet.</p>
+              <p className="p-4 text-[12.5px] text-nb-ink-soft">No sessions yet.</p>
             ) : (
               ordered.map((r) => {
-                const active = r.runId === selectedId;
+                const active = r.sessionId === selectedId;
                 return (
                   <button
-                    key={r.runId}
+                    key={r.sessionId}
                     type="button"
-                    onClick={() => runsPanel.select(r.runId)}
+                    onClick={() => sessionsPanel.select(r.sessionId)}
                     className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-nb-ink/8 px-3 py-2.5 text-left transition-colors ${
                       active
                         ? "bg-nb-paper shadow-[inset_2.5px_0_0_0_var(--color-nb-accent)]"
                         : "hover:bg-nb-wash/70"
                     }`}
                   >
-                    <RunDot run={r} />
+                    <SessionDot session={r} />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline gap-1.5">
                         <span
@@ -388,7 +394,7 @@ function RunsDialog({ runs }: { runs: RunView[] }) {
             )}
           </div>
 
-          {/* right: the selected run's input + log */}
+          {/* right: the selected session's input + log */}
           <div className="min-w-0 flex-1 overflow-y-auto p-4">
             {selected ? (
               <>
@@ -400,27 +406,27 @@ function RunsDialog({ runs }: { runs: RunView[] }) {
                     <span className="text-[12px] text-nb-ink-soft">#{selected.cardId}</span>
                   )}
                   <span className="text-[11px] text-nb-ink-soft">{fullTime(selected.startedAt)}</span>
-                  {(log?.sessionId ?? selected.sessionId) && (
+                  {(log?.resumable ?? selected.resumable) && (log?.sessionId ?? selected.sessionId) && (
                     <span className="ml-auto">
                       <HandoffButton sessionId={(log?.sessionId ?? selected.sessionId) as string} />
                     </span>
                   )}
                 </div>
                 {/* The note is the optional free text the user typed when
-                    starting the run (a create's description, a reject's reason,
-                    else the notes field). Most runs are started without one — so
-                    only show the section when there's actually a note, rather
-                    than a "no note" placeholder on every run. */}
+                    starting the session (a create's description, a reject's
+                    reason, else the notes field). Most sessions are started
+                    without one — so only show the section when there's actually a
+                    note, rather than a "no note" placeholder on every session. */}
                 {input && (
                   <div className="mb-3">
                     <div className="nb-tag mb-1.5">note</div>
                     <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-nb-ink">{input}</p>
                   </div>
                 )}
-                <RunLog run={log ?? selected} flush />
+                <SessionLog session={log ?? selected} flush />
               </>
             ) : (
-              <p className="text-[13px] text-nb-ink-soft">Select a run to see its input and log.</p>
+              <p className="text-[13px] text-nb-ink-soft">Select a session to see its input and log.</p>
             )}
           </div>
         </div>

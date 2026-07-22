@@ -15,20 +15,20 @@ import {
 } from "react-icons/fi";
 import { patchCardAction } from "@/app/actions";
 import type { CardPatch } from "@/lib/edit";
-import type { AgentInfo, Card, RunView } from "@/lib/types";
+import type { AgentInfo, Card, SessionView } from "@/lib/types";
 import { Button } from "./button";
 import { Header } from "./Header";
 import {
   ActionDialog,
   type AgentReq,
   type DialogState,
-  RunLog,
   RUNNING_VERB,
   RunningBadge,
+  SessionLog,
 } from "./agent-shared";
 import { LevelSelect, StatusPill, TodoProgress, TrackChip } from "./chips";
 import { Markdown } from "./Markdown";
-import { latestRunForCard, runningCardIds, runningRunForCard, type StartedRun, useAgentRuns, useRunLog } from "./runs";
+import { latestSessionForCard, runningCardIds, runningSessionForCard, type StartedSession, useAgentSessions, useSessionLog } from "./sessions";
 
 const CAP = "text-[10px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft";
 
@@ -49,38 +49,38 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // A run this tab started just finished. Reject/archive remove the card, so we
-  // go back to the board (the inline RunLog can't show output for a card that no
-  // longer exists); the rest re-read the card in place and the inline RunLog
-  // shows the agent's final message.
+  // A session this tab started just finished. Reject/archive remove the card, so
+  // we go back to the board (the inline SessionLog can't show output for a card
+  // that no longer exists); the rest re-read the card in place and the inline
+  // SessionLog shows the agent's final message.
   const onFinish = useCallback(
-    (run: RunView, started: StartedRun) => {
-      if (started.removes && run.ok) router.push("/");
+    (session: SessionView, started: StartedSession) => {
+      if (started.removes && session.ok) router.push("/");
       else router.refresh();
     },
     [router],
   );
 
-  const { runs, start } = useAgentRuns(onFinish);
+  const { sessions, start } = useAgentSessions(onFinish);
 
-  // A live run on this card (from any tab) blocks a second run and shows a badge.
-  const busy = runningCardIds(runs).has(card.id);
-  // The run itself, so the badge can name the action in flight (refining, etc.).
-  const liveRun = runningRunForCard(runs, card.id);
+  // A live session on this card (from any tab) blocks a second one and shows a badge.
+  const busy = runningCardIds(sessions).has(card.id);
+  // The session itself, so the badge can name the action in flight (refining, etc.).
+  const liveSession = runningSessionForCard(sessions, card.id);
   const { total, done } = card.todos;
   const allDone = total > 0 && done === total;
 
-  // Tail the newest run on this card: live while it runs, and re-openable once
+  // Tail the newest session on this card: live while it runs, and re-openable once
   // it's done so the user can read back what the agent did (task #14).
-  const latestRun = latestRunForCard(runs, card.id);
-  const runLog = useRunLog(latestRun?.runId ?? null);
+  const latestSession = latestSessionForCard(sessions, card.id);
+  const sessionLog = useSessionLog(latestSession?.sessionId ?? null);
   const [showLog, setShowLog] = useState(false);
-  // A run just started on this card — open the log so the user watches it live.
+  // A session just started on this card — open the log so the user watches it live.
   useEffect(() => {
     if (busy) setShowLog(true);
   }, [busy]);
 
-  // Start a non-blocking run. The per-card lock refusal comes back as an error.
+  // Start a non-blocking session. The per-card lock refusal comes back as an error.
   const runAgent = async (req: AgentReq, label: string) => {
     setDialog(null);
     const removes = req.action === "reject" || req.action === "archive";
@@ -125,16 +125,16 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
           </Link>
         )}
 
-        {/* title band — the card's one mark rides beside the title: a live run's
-            badge while busy, otherwise the saved stage (nothing while `todo`).
-            Never both. */}
+        {/* title band — the card's one mark rides beside the title: a live
+            session's badge while busy, otherwise the saved stage (nothing while
+            `todo`). Never both. */}
         <div className="mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
           <span className="shrink-0 text-[20px] font-[800]" style={{ color: "var(--color-nb-accent-deep)" }}>
             #{card.id}
           </span>
           <h1 className="text-[20px] font-[800] tracking-[-0.02em] leading-tight">{card.title}</h1>
           {busy ? (
-            <RunningBadge label={liveRun ? `${RUNNING_VERB[liveRun.action]} this card…` : "working…"} />
+            <RunningBadge label={liveSession ? `${RUNNING_VERB[liveSession.action]} this card…` : "working…"} />
           ) : (
             card.status !== "todo" && <StatusPill status={card.status} detailed />
           )}
@@ -182,12 +182,12 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
           </Button>
         </div>
 
-        {/* Run log: the live tail while an agent works, and a re-openable view of
-            the last run's output afterwards. The full log stays in its file. */}
-        {latestRun && (
+        {/* Session log: the live tail while an agent works, and a re-openable view
+            of the last session's output afterwards. The full log stays in its file. */}
+        {latestSession && (
           <div className="mb-4">
-            <RunLog
-              run={runLog}
+            <SessionLog
+              session={sessionLog}
               openIds={openIds}
               collapsed={!busy && !showLog}
               onToggle={busy ? undefined : () => setShowLog((v) => !v)}

@@ -22,7 +22,7 @@ export function AgentBadge({ info }: { info: AgentInfo }) {
   return (
     <>
       {/* Ghost sticker button (design.md .nb-cta-ghost), a matched pair with the
-          header's Runs button: same 36px frame, solid ink border, hard offset
+          header's Sessions button: same 36px frame, solid ink border, hard offset
           shadow and press-down — the quiet siblings of the accent Create CTA. */}
       <button
         type="button"

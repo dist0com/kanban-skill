@@ -2,12 +2,12 @@ import Link from "next/link";
 import type { AgentInfo } from "@/lib/types";
 import { AgentBadge } from "./AgentBadge";
 import { CreateTask } from "./CreateTask";
-import { Runs } from "./runs";
+import { Sessions } from "./sessions";
 
 // Shared header for the board and the card detail page — identical on both: the
 // brand links home (the board), and the Create-task action and agent badge sit
 // on the right. Create task is self-contained (see CreateTask) so both pages get
-// it without threading any run state through the header.
+// it without threading any session state through the header.
 export function Header({ agent }: { agent: AgentInfo }) {
   return (
     <header
@@ -27,7 +27,7 @@ export function Header({ agent }: { agent: AgentInfo }) {
         <span className="text-[12px] text-nb-ink-soft">files in docs/kanban/ are the source of truth</span>
       </div>
       <div className="flex items-center gap-3">
-        <Runs />
+        <Sessions />
         <AgentBadge info={agent} />
         <CreateTask />
       </div>

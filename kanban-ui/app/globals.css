@@ -109,9 +109,9 @@ body {
 
 /* --- Board-specific bits built from the same language --------------------- */
 
-/* The header's agent indicator and Runs button are a matched pair of quiet
+/* The header's agent indicator and Sessions button are a matched pair of quiet
    outlined controls built from Tailwind utilities inline in their components
-   (AgentBadge / runs.tsx) — no shared class here. */
+   (AgentBadge / sessions.tsx) — no shared class here. */
 
 /* Borderless meaning chip (track / priority / roi) */
 .nb-chip {
@@ -195,8 +195,8 @@ body {
 /* The dialog textarea now lives as Tailwind utilities in
    components/agent-shared.tsx (INPUT) — colocated with the dialogs that use it. */
 
-/* Rendered markdown card body (`.nb-md`, `.nb-idlink`, `.nb-runlog-md`) lives in
-   ./markdown.css — imported alongside this file in app/layout.tsx. */
+/* Rendered markdown card body (`.nb-md`, `.nb-idlink`, `.nb-sessionlog-md`) lives
+   in ./markdown.css — imported alongside this file in app/layout.tsx. */
 
 /* Modal scrim */
 .nb-scrim {
@@ -212,7 +212,7 @@ body {
 }
 
 /* --- shadcn sheet animations — Radix data-state driven, no token changes --- */
-/* Pulse dot + run-log chrome (title bar, chrome toggle, body, live stream) now
+/* Pulse dot + session-log chrome (title bar, chrome toggle, body, live stream) now
    live as Tailwind utilities in components/agent-shared.tsx — colocated with the
    markup. This keyframe stays here because the .nb-pulse element references it by
    name via animate-[nbPulse_...]. */

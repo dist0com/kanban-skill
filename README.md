@@ -25,14 +25,14 @@ From your project root, tell Claude Code (or any coding agent that can run shell
 
 ```
 Set up the kanban skill for this project. Read
-https://raw.githubusercontent.com/dist0com/kanban-skill/main/INSTALL_PROMPT.txt and follow it.
+https://kanbanskill.cc/INSTALL_PROMPT.txt and follow it.
 ```
 
 The agent copies the skill into `.claude/skills/kanban/`, reads your codebase to fill in
 the configuration, scaffolds the board under `docs/kanban/`, and proposes your first three
 tasks. From then on you just talk to the board.
 
-If your agent can't fetch URLs, open [`INSTALL_PROMPT.txt`](INSTALL_PROMPT.txt) and paste
+If your agent can't fetch URLs, open [`INSTALL_PROMPT.txt`](web/public/INSTALL_PROMPT.txt) and paste
 its contents instead — same result. The only requirement is Node.js 18+ — the script has
 no dependencies, so there's nothing to install.
 

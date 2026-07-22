@@ -1,10 +1,10 @@
 // Turns the agent's NDJSON event stream into a readable log (task #14).
-// `claude -p` in its default text mode prints nothing until the run ends, so
+// `claude -p` in its default text mode prints nothing until the session ends, so
 // there is no live tail to show. The spawn asks for `--output-format
 // stream-json` instead (see agentArgv) and this renders each event — the
 // agent's turn text and its tool calls — into log lines as they happen. The
 // final `result` event is captured separately: the UI leads with it once the
-// run completes and folds the event lines away.
+// session completes and folds the event lines away.
 //
 // Non-JSON lines pass through untouched, so a custom (non-claude) agent
 // command that prints plain text, or a stray CLI warning, still lands in the
@@ -17,10 +17,6 @@ export interface StreamRenderer {
   flush(): string;
   /** The agent's final message, once the `result` event has arrived. */
   result(): string | undefined;
-  /** Claude Code's session id, carried on every stream-json event. Lets the UI
-   *  offer a "resume this run in claude code" handoff (`claude --resume <id>`).
-   *  Undefined for a custom (non-claude) command that emits no session id. */
-  sessionId(): string | undefined;
 }
 
 // One short hint per tool call: the argument a human would recognize the call
@@ -39,7 +35,6 @@ function toolHint(input: unknown): string {
 export function createStreamRenderer(): StreamRenderer {
   let buf = "";
   let final: string | undefined;
-  let session: string | undefined;
 
   const renderLine = (line: string): string => {
     if (!line.trim()) return "";
@@ -51,9 +46,6 @@ export function createStreamRenderer(): StreamRenderer {
     } catch {
       return line + "\n";
     }
-    // Every claude stream-json event carries the session id (the `system` init
-    // event first). Capture it so a run can be resumed in claude code.
-    if (typeof ev.session_id === "string" && ev.session_id) session = ev.session_id;
     switch (ev.type) {
       case "assistant": {
         const msg = ev.message as { content?: unknown } | undefined;
@@ -91,6 +83,5 @@ export function createStreamRenderer(): StreamRenderer {
       return rest ? renderLine(rest) : "";
     },
     result: () => final,
-    sessionId: () => session,
   };
 }

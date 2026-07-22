@@ -2,17 +2,18 @@ import { execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { agentArgv, type AgentRequest } from "./agent";
+import { agentArgv, type AgentRequest, isClaudeAgent } from "./agent";
 import { allCards, findCard } from "./board";
 import { kanbanDir, repoRoot } from "./paths";
 import { createStreamRenderer } from "./stream";
-import type { AgentAction, CardStatus, RunView } from "./types";
+import type { AgentAction, CardStatus, SessionView } from "./types";
 
-// The server-side run registry. One local UI server = one process, so this
+// The server-side session registry. One local UI server = one process, so this
 // in-memory map is shared by every browser tab: a tab that refreshes, or a
-// second tab, re-reads the same runs. It gives the UI a single correct picture
-// of what every agent is doing, holds the per-card and board-index locks, and
-// survives a UI restart via a small gitignored file (each run's pid).
+// second tab, re-reads the same sessions. It gives the UI a single correct
+// picture of what every agent is doing, holds the per-card and board-index
+// locks, and survives a UI restart via a small gitignored file (each session's
+// pid).
 //
 // Why globalThis: Next may evaluate this module more than once across its server
 // bundles. Pinning the state to globalThis keeps it a true singleton so two
@@ -27,9 +28,10 @@ const INDEX_ACTIONS = new Set<AgentAction>(["create", "archive", "reject"]);
 // no card yet, so the per-card lock can't catch a duplicate — and the registry
 // is shared by every tab (one UI server = one process), so this refuses a second
 // create instead of silently queuing it behind the index lock. Survives a UI
-// restart too: an in-flight create is re-adopted as a running run before the
+// restart too: an in-flight create is re-adopted as a running session before the
 // guard checks. This is the "single global create" rule — no separate lock file
-// needed, the registry (persisted to .runs.json) is already the source of truth.
+// needed, the registry (persisted to .sessions.json) is already the source of
+// truth.
 const SINGLETON_ACTIONS = new Set<AgentAction>(["create"]);
 
 // Past-tense verb for the "already running" message, e.g. "#5 is already being
@@ -44,10 +46,10 @@ const VERB: Record<AgentAction, string> = {
   resolve: "resolved",
 };
 
-// A run's action maps to the saved stage it puts the card in while it runs.
+// A session's action maps to the saved stage it puts the card in while it runs.
 // Only implement sets a status — the rest (edit/refine/resolve refine the card,
 // create/archive/reject touch no resting card) leave the stage alone.
-const RUN_STATUS: Partial<Record<AgentAction, CardStatus>> = {
+const SESSION_STATUS: Partial<Record<AgentAction, CardStatus>> = {
   implement: "implementing",
 };
 
@@ -69,43 +71,47 @@ function setCardStatus(cardId: number, status: CardStatus): void {
   }
 }
 
-// When an implement run ends and its card still exists, restore the stage it had
-// before the run — so a `ready` card is `ready` again, not knocked back to `todo`.
-// Questions always win: if the run left the card with open questions, drop it to
-// `todo` no matter the prior stage. If the run finished the task (archive/reject
-// removed the card) this is a harmless no-op.
-function clearRunStatus(run: Run): void {
-  if (run.cardId === null || !RUN_STATUS[run.action]) return;
-  const card = findCard(run.cardId);
+// When an implement session ends and its card still exists, restore the stage it
+// had before — so a `ready` card is `ready` again, not knocked back to `todo`.
+// Questions always win: if the session left the card with open questions, drop
+// it to `todo` no matter the prior stage. If the session finished the task
+// (archive/reject removed the card) this is a harmless no-op.
+function clearSessionStatus(session: Session): void {
+  if (session.cardId === null || !SESSION_STATUS[session.action]) return;
+  const card = findCard(session.cardId);
   if (!card) return; // archived/rejected — nothing to restore
   const restore: CardStatus =
-    card.questions.length > 0 ? "todo" : run.priorStatus ?? "todo";
-  setCardStatus(run.cardId, restore);
+    card.questions.length > 0 ? "todo" : session.priorStatus ?? "todo";
+  setCardStatus(session.cardId, restore);
 }
 
-const KEEP_LOGS = 30; // how many run logs to keep on disk
-const KEEP_RUNS = 30; // how many finished runs to keep in memory (and persisted)
-const TAIL_MAX = 8000; // chars of output kept per run (in memory)
+const KEEP_LOGS = 30; // how many session logs to keep on disk
+const KEEP_SESSIONS = 30; // how many finished sessions to keep in memory (and persisted)
+const TAIL_MAX = 8000; // chars of output kept per session (in memory)
 const TAIL_BYTES = 16 * 1024; // last few KB of the log read from disk for the UI
 
 // A sentinel line written into the log just before the agent's final message, so
-// a run re-adopted after a UI restart (whose parsed `result` didn't survive in
-// memory) can still split the durable log back into events + final message —
+// a session re-adopted after a UI restart (whose parsed `result` didn't survive
+// in memory) can still split the durable log back into events + final message —
 // letting the UI fold the events away exactly as it does for an in-session run.
 // The events are rendered tool/turn lines, so this bracketed token won't collide.
 const RESULT_MARKER = "<<<kanban:result>>>";
 
-interface Run {
-  runId: string;
+interface Session {
+  // The session's unique id and the registry map key. For a claude agent it's
+  // also Claude Code's own session id — we generate it and pass it through as
+  // `--session-id`, so the id the UI hands off is the id claude runs under.
+  sessionId: string;
   cardId: number | null;
   action: AgentAction;
   status: "running" | "done" | "error";
   startedAt: number;
   endedAt?: number;
   pid?: number;
-  // The text the user typed for this run — a create's description, an action's
-  // notes, or a reject's reason. The request object is gone once the run starts,
-  // so we keep it here (and persist it) for the global runs panel to show (#21).
+  // The text the user typed for this session — a create's description, an
+  // action's notes, or a reject's reason. The request object is gone once the
+  // session starts, so we keep it here (and persist it) for the global sessions
+  // panel to show (#21).
   input?: string;
   ok?: boolean;
   code?: number | null;
@@ -113,47 +119,48 @@ interface Run {
   tail: string;
   // The agent's final message, parsed out of its event stream at close. The
   // tail holds only the intermediate events then — the UI leads with this and
-  // folds the tail away. Unset for a custom (non-streaming) command or a run
+  // folds the tail away. Unset for a custom (non-streaming) command or a session
   // re-adopted after a restart; the tail is all there is in those cases.
   result?: string;
-  // Claude Code's session id, read off the event stream (first `system` event).
-  // Persisted so the UI's "resume in claude code" handoff survives a restart.
-  // Unset for a custom (non-claude) command that emits no session id.
-  sessionId?: string;
+  // True when the agent is the Claude Code CLI, so `sessionId` is a real Claude
+  // Code session the UI can offer to resume (`claude --resume <id>`). False for
+  // a custom command — the id is unique but there's nothing to resume.
+  resumable?: boolean;
   logPath: string;
-  // The card's saved stage the instant before this run overwrote it with
-  // `implementing`. Restored when the run ends, so a run on a `ready` card leaves
-  // it `ready` again instead of dropping it to `todo`. Only set for implement runs
-  // (the only ones that touch the stage). Persisted so a run that ends after a UI
-  // restart still restores the right stage.
+  // The card's saved stage the instant before this session overwrote it with
+  // `implementing`. Restored when the session ends, so a session on a `ready`
+  // card leaves it `ready` again instead of dropping it to `todo`. Only set for
+  // implement sessions (the only ones that touch the stage). Persisted so a
+  // session that ends after a UI restart still restores the right stage.
   priorStatus?: CardStatus;
   // Re-adopted from disk after a UI restart. We are no longer its parent, so we
   // detect its exit by polling the pid instead of a 'close' event.
   adopted?: boolean;
-  // The run was still going when the UI restarted, then ended out of our sight —
-  // we polled its pid, so we never learned the exit code. Shown as finished with
-  // no pass/fail mark (task #14): don't guess an outcome we never saw.
+  // The session was still going when the UI restarted, then ended out of our
+  // sight — we polled its pid, so we never learned the exit code. Shown as
+  // finished with no pass/fail mark (task #14): don't guess an outcome we never
+  // saw.
   outcomeUnknown?: boolean;
 }
 
 interface RegistryState {
-  runs: Map<string, Run>;
+  sessions: Map<string, Session>;
   // A promise chain that serializes INDEX_ACTIONS: each waits for the prior to
   // release before it spawns, and releases when its child closes.
   indexTail: Promise<void>;
 }
 
-function runsDir(): string {
-  return path.join(kanbanDir(), ".runs");
+function sessionsDir(): string {
+  return path.join(kanbanDir(), ".sessions");
 }
-function runsFile(): string {
-  return path.join(kanbanDir(), ".runs.json");
+function sessionsFile(): string {
+  return path.join(kanbanDir(), ".sessions.json");
 }
 
 function state(): RegistryState {
   const g = globalThis as unknown as { __kanbanRegistry?: RegistryState };
   if (!g.__kanbanRegistry) {
-    g.__kanbanRegistry = { runs: new Map(), indexTail: Promise.resolve() };
+    g.__kanbanRegistry = { sessions: new Map(), indexTail: Promise.resolve() };
     adoptFromDisk(g.__kanbanRegistry);
     reconcileStatuses(g.__kanbanRegistry);
   }
@@ -174,44 +181,45 @@ function pidAlive(pid?: number): boolean {
   }
 }
 
-// The finished runs to persist so both a card's "show last run log" button (#14)
-// and the global runs panel (#21) survive a UI restart: the newest KEEP_RUNS
-// finished runs whose log file still exists (a pruned log would be a dead
-// pointer). Unlike the old one-per-card slot, this keeps a card-less create too,
-// so the panel's history list survives a restart in full.
-function recentFinished(s: RegistryState): Run[] {
-  return [...s.runs.values()]
+// The finished sessions to persist so both a card's "show last session log"
+// button (#14) and the global sessions panel (#21) survive a UI restart: the
+// newest KEEP_SESSIONS finished sessions whose log file still exists (a pruned
+// log would be a dead pointer). Unlike the old one-per-card slot, this keeps a
+// card-less create too, so the panel's history list survives a restart in full.
+function recentFinished(s: RegistryState): Session[] {
+  return [...s.sessions.values()]
     .filter((r) => r.status !== "running" && fs.existsSync(r.logPath))
     .sort((a, b) => b.startedAt - a.startedAt)
-    .slice(0, KEEP_RUNS);
+    .slice(0, KEEP_SESSIONS);
 }
 
-// Write the registry so a restart can find it again: the live runs (pid +
-// identity) that must be re-adopted, and the newest finished runs so the card's
-// "show last run log" button (#14) and the global runs panel (#21) survive.
+// Write the registry so a restart can find it again: the live sessions (pid +
+// identity) that must be re-adopted, and the newest finished sessions so the
+// card's "show last session log" button (#14) and the global sessions panel
+// (#21) survive.
 function persist(s: RegistryState): void {
-  const live = [...s.runs.values()]
+  const live = [...s.sessions.values()]
     .filter((r) => r.status === "running" && r.pid)
     .map((r) => ({
-      runId: r.runId,
+      sessionId: r.sessionId,
       cardId: r.cardId,
       action: r.action,
       pid: r.pid,
       startedAt: r.startedAt,
       input: r.input,
-      sessionId: r.sessionId,
+      resumable: r.resumable,
       logPath: r.logPath,
       priorStatus: r.priorStatus,
     }));
   const finished = recentFinished(s).map((r) => ({
-    runId: r.runId,
+    sessionId: r.sessionId,
     cardId: r.cardId,
     action: r.action,
     status: r.status,
     startedAt: r.startedAt,
     endedAt: r.endedAt,
     input: r.input,
-    sessionId: r.sessionId,
+    resumable: r.resumable,
     ok: r.ok,
     code: r.code,
     error: r.error,
@@ -220,63 +228,63 @@ function persist(s: RegistryState): void {
   }));
   try {
     fs.mkdirSync(kanbanDir(), { recursive: true });
-    fs.writeFileSync(runsFile(), JSON.stringify({ live, finished }, null, 2));
+    fs.writeFileSync(sessionsFile(), JSON.stringify({ live, finished }, null, 2));
   } catch {
-    // best-effort: a failed write just means a restart forgets a run
+    // best-effort: a failed write just means a restart forgets a session
   }
 }
 
-// On start-up, re-read the saved runs. A live run whose pid is still alive → put
-// it back so the card keeps its running badge and a second run can't start on it
-// (a dead pid is dropped; task #13 resets that card's stale stage). Each saved
-// finished run whose log file still exists → put it back so its "show last run
-// log" button re-opens the file (task #14); a pruned log is skipped.
+// On start-up, re-read the saved sessions. A live session whose pid is still
+// alive → put it back so the card keeps its running badge and a second session
+// can't start on it (a dead pid is dropped; task #13 resets that card's stale
+// stage). Each saved finished session whose log file still exists → put it back
+// so its "show last session log" button re-opens the file (task #14); a pruned
+// log is skipped.
 function adoptFromDisk(s: RegistryState): void {
   let data: unknown;
   try {
-    data = JSON.parse(fs.readFileSync(runsFile(), "utf8"));
+    data = JSON.parse(fs.readFileSync(sessionsFile(), "utf8"));
   } catch {
     return;
   }
-  // Back-compat: an older UI wrote a bare array of live runs.
-  const live = Array.isArray(data) ? data : (data as { live?: unknown[] })?.live;
-  const finished = Array.isArray(data) ? [] : (data as { finished?: unknown[] })?.finished;
+  const live = (data as { live?: unknown[] })?.live;
+  const finished = (data as { finished?: unknown[] })?.finished;
 
   for (const d of (Array.isArray(live) ? live : []) as any[]) {
-    if (!d || typeof d.runId !== "string" || !pidAlive(d.pid)) continue;
-    s.runs.set(d.runId, {
-      runId: d.runId,
+    if (!d || typeof d.sessionId !== "string" || !pidAlive(d.pid)) continue;
+    s.sessions.set(d.sessionId, {
+      sessionId: d.sessionId,
       cardId: typeof d.cardId === "number" ? d.cardId : null,
       action: d.action,
       status: "running",
       startedAt: d.startedAt || Date.now(),
       pid: d.pid,
       input: typeof d.input === "string" ? d.input : undefined,
-      sessionId: typeof d.sessionId === "string" ? d.sessionId : undefined,
+      resumable: d.resumable === true,
       tail: "",
-      logPath: d.logPath || path.join(runsDir(), `${d.runId}.log`),
+      logPath: d.logPath || path.join(sessionsDir(), `${d.sessionId}.log`),
       priorStatus: d.priorStatus,
       adopted: true,
     });
   }
 
   for (const d of (Array.isArray(finished) ? finished : []) as any[]) {
-    if (!d || typeof d.runId !== "string" || s.runs.has(d.runId)) continue;
+    if (!d || typeof d.sessionId !== "string" || s.sessions.has(d.sessionId)) continue;
     const logPath = typeof d.logPath === "string" ? d.logPath : "";
     if (!logPath || !fs.existsSync(logPath)) continue; // log pruned — drop the record
-    s.runs.set(d.runId, {
-      runId: d.runId,
+    s.sessions.set(d.sessionId, {
+      sessionId: d.sessionId,
       cardId: typeof d.cardId === "number" ? d.cardId : null,
       action: d.action,
       status: d.status === "error" ? "error" : "done",
       startedAt: d.startedAt || Date.now(),
       endedAt: typeof d.endedAt === "number" ? d.endedAt : undefined,
       input: typeof d.input === "string" ? d.input : undefined,
-      sessionId: typeof d.sessionId === "string" ? d.sessionId : undefined,
+      resumable: d.resumable === true,
       ok: typeof d.ok === "boolean" ? d.ok : undefined,
       code: d.code ?? null,
       error: typeof d.error === "string" ? d.error : undefined,
-      // No in-memory tail/result survives a restart — getRun() reads the log file.
+      // No in-memory tail/result survives a restart — getSession() reads the log file.
       tail: "",
       logPath,
       outcomeUnknown: d.outcomeUnknown === true,
@@ -286,11 +294,12 @@ function adoptFromDisk(s: RegistryState): void {
   persist(s); // rewrite without the dead ones
 }
 
-// On start-up, fix a stale stage: a card saved as `implementing` whose run no
-// longer exists (the UI crashed mid-run) is reset to `todo`, so the field never
-// gets stuck. Runs still alive were re-adopted above, so they keep their stage.
-// `ready` is a durable resting stage no run owns (refine sets it), so it's left
-// alone. Best-effort — a board that can't be read just skips this.
+// On start-up, fix a stale stage: a card saved as `implementing` whose session
+// no longer exists (the UI crashed mid-run) is reset to `todo`, so the field
+// never gets stuck. Sessions still alive were re-adopted above, so they keep
+// their stage. `ready` is a durable resting stage no session owns (refine sets
+// it), so it's left alone. Best-effort — a board that can't be read just skips
+// this.
 function reconcileStatuses(s: RegistryState): void {
   let cards;
   try {
@@ -299,24 +308,25 @@ function reconcileStatuses(s: RegistryState): void {
     return;
   }
   for (const c of cards) {
-    const runDriven = c.status === "implementing";
-    if (runDriven && !liveRunForCard(s, c.id)) {
+    const sessionDriven = c.status === "implementing";
+    if (sessionDriven && !liveSessionForCard(s, c.id)) {
       setCardStatus(c.id, "todo");
     }
   }
 }
 
-// Adopted runs have no 'close' event, so reap them by polling the pid. Called on
-// every read so the UI's poll drives the check — no background timer needed.
+// Adopted sessions have no 'close' event, so reap them by polling the pid.
+// Called on every read so the UI's poll drives the check — no background timer
+// needed.
 function reapAdopted(s: RegistryState): void {
   let changed = false;
-  for (const r of s.runs.values()) {
+  for (const r of s.sessions.values()) {
     if (r.status === "running" && r.adopted && !pidAlive(r.pid)) {
       r.status = "done";
       r.code = null; // exit code is unknown across a restart
       r.outcomeUnknown = true; // finished out of our sight — no pass/fail to show
       r.endedAt = Date.now();
-      clearRunStatus(r);
+      clearSessionStatus(r);
       changed = true;
     }
   }
@@ -328,10 +338,11 @@ function reapAdopted(s: RegistryState): void {
 
 // --- logs -------------------------------------------------------------------
 
-// Read the tail of a run's log file — the durable source #14 shows. Bounded to
-// the last few KB so a long run doesn't bloat the page; the full log stays in
-// the file. Reading from the file (not the in-memory tail) is what makes a run
-// re-adopted after a UI restart still show its output, and never grows unbounded.
+// Read the tail of a session's log file — the durable source #14 shows. Bounded
+// to the last few KB so a long session doesn't bloat the page; the full log
+// stays in the file. Reading from the file (not the in-memory tail) is what
+// makes a session re-adopted after a UI restart still show its output, and never
+// grows unbounded.
 function readLogTail(logPath: string, maxBytes = TAIL_BYTES): string | null {
   let fd: number | undefined;
   try {
@@ -364,11 +375,11 @@ function readLogTail(logPath: string, maxBytes = TAIL_BYTES): string | null {
 }
 
 // Split a log tail read from disk into intermediate events + the agent's final
-// message, so a run re-adopted after a restart folds the events away the same as
-// an in-session run. Returns just { tail } when there's no separable message (a
-// live run, or a custom command with no recognizable structure).
+// message, so a session re-adopted after a restart folds the events away the
+// same as an in-session run. Returns just { tail } when there's no separable
+// message (a live session, or a custom command with no recognizable structure).
 function splitLogResult(logText: string): { tail: string; result?: string } {
-  // Exact path — a run written after the marker landed: everything after the
+  // Exact path — a log written after the marker landed: everything after the
   // marker is the final message, everything before it is the events. lastIndexOf
   // so a marker-like token in the events can't beat the real one appended last.
   const at = logText.lastIndexOf(RESULT_MARKER);
@@ -396,17 +407,17 @@ function splitLogResult(logText: string): { tail: string; result?: string } {
   return { tail, result: result || undefined };
 }
 
-// Keep only the last KEEP_LOGS run logs on disk; delete older ones.
+// Keep only the last KEEP_LOGS session logs on disk; delete older ones.
 function pruneLogs(): void {
   try {
     const files = fs
-      .readdirSync(runsDir())
+      .readdirSync(sessionsDir())
       .filter((f) => f.endsWith(".log"))
-      .map((f) => ({ f, t: fs.statSync(path.join(runsDir(), f)).mtimeMs }))
+      .map((f) => ({ f, t: fs.statSync(path.join(sessionsDir(), f)).mtimeMs }))
       .sort((a, b) => b.t - a.t);
     for (const { f } of files.slice(KEEP_LOGS)) {
       try {
-        fs.unlinkSync(path.join(runsDir(), f));
+        fs.unlinkSync(path.join(sessionsDir(), f));
       } catch {
         // ignore
       }
@@ -416,14 +427,14 @@ function pruneLogs(): void {
   }
 }
 
-// Bound the in-memory map: drop the oldest finished runs past KEEP_RUNS. Running
-// runs are always kept.
+// Bound the in-memory map: drop the oldest finished sessions past KEEP_SESSIONS.
+// Running sessions are always kept.
 function pruneMemory(s: RegistryState): void {
-  const finished = [...s.runs.values()]
+  const finished = [...s.sessions.values()]
     .filter((r) => r.status !== "running")
     .sort((a, b) => (a.endedAt || 0) - (b.endedAt || 0));
-  for (const r of finished.slice(0, Math.max(0, finished.length - KEEP_RUNS))) {
-    s.runs.delete(r.runId);
+  for (const r of finished.slice(0, Math.max(0, finished.length - KEEP_SESSIONS))) {
+    s.sessions.delete(r.sessionId);
   }
 }
 
@@ -439,34 +450,34 @@ function acquireIndexLock(s: RegistryState): Promise<() => void> {
   return prior.then(() => release);
 }
 
-// --- starting a run ---------------------------------------------------------
+// --- starting a session -----------------------------------------------------
 
 export interface StartResult {
   ok: boolean;
-  runId?: string;
+  sessionId?: string;
   error?: string;
 }
 
-// The text the user typed for a run, pulled from whichever request field carries
-// it: create → description, reject → reason, everything else → notes. Trimmed;
-// empty becomes undefined. Stored on the run so the runs panel shows the input
-// alongside the log (#21).
-function runInput(req: AgentRequest): string | undefined {
+// The text the user typed for a session, pulled from whichever request field
+// carries it: create → description, reject → reason, everything else → notes.
+// Trimmed; empty becomes undefined. Stored on the session so the sessions panel
+// shows the input alongside the log (#21).
+function sessionInput(req: AgentRequest): string | undefined {
   const text = req.description ?? req.reason ?? req.notes ?? "";
   return text.trim() || undefined;
 }
 
 // Start an agent and return at once — the request never awaits the child. The
-// run is recorded as `running`; the UI polls listRuns() and sees it flip to
-// done/error on close. Enforces the per-card lock here (synchronously) so a
-// double-click or a second tab can't start two runs on one card.
-export function startRun(req: AgentRequest, prompt: string): StartResult {
+// session is recorded as `running`; the UI polls listSessions() and sees it flip
+// to done/error on close. Enforces the per-card lock here (synchronously) so a
+// double-click or a second tab can't start two sessions on one card.
+export function startSession(req: AgentRequest, prompt: string): StartResult {
   const s = state();
   reapAdopted(s);
 
   const cardId = Number.isInteger(req.id) ? (req.id as number) : null;
   if (cardId !== null) {
-    const live = liveRunForCard(s, cardId);
+    const live = liveSessionForCard(s, cardId);
     if (live) {
       return { ok: false, error: `#${cardId} is already being ${VERB[live.action]}` };
     }
@@ -475,64 +486,67 @@ export function startRun(req: AgentRequest, prompt: string): StartResult {
   // One-at-a-time actions (create): refuse a second while one is live, across all
   // tabs. The per-card lock above doesn't cover a create — it has no card id yet.
   if (SINGLETON_ACTIONS.has(req.action)) {
-    for (const r of s.runs.values()) {
+    for (const r of s.sessions.values()) {
       if (r.status === "running" && r.action === req.action) {
         return { ok: false, error: `a task is already being ${VERB[req.action]}` };
       }
     }
   }
 
-  const runId = randomUUID();
-  const run: Run = {
-    runId,
+  // Generate the id up front so it's the registry key AND (for a claude agent)
+  // the id we pass to `--session-id` — one id, known before the child spawns.
+  const sessionId = randomUUID();
+  const session: Session = {
+    sessionId,
     cardId,
     action: req.action,
     status: "running",
     startedAt: Date.now(),
-    input: runInput(req),
+    input: sessionInput(req),
+    resumable: isClaudeAgent(),
     tail: "",
-    logPath: path.join(runsDir(), `${runId}.log`),
+    logPath: path.join(sessionsDir(), `${sessionId}.log`),
   };
-  s.runs.set(runId, run);
+  s.sessions.set(sessionId, session);
   persist(s);
 
-  void launch(s, run, prompt); // fire and forget
-  return { ok: true, runId };
+  void launch(s, session, prompt); // fire and forget
+  return { ok: true, sessionId };
 }
 
-function liveRunForCard(s: RegistryState, cardId: number): Run | undefined {
-  for (const r of s.runs.values()) {
+function liveSessionForCard(s: RegistryState, cardId: number): Session | undefined {
+  for (const r of s.sessions.values()) {
     if (r.status === "running" && r.cardId === cardId) return r;
   }
   return undefined;
 }
 
-async function launch(s: RegistryState, run: Run, prompt: string): Promise<void> {
+async function launch(s: RegistryState, session: Session, prompt: string): Promise<void> {
   // Serialize the shared-file rewrites; other actions spawn straight away.
-  const release = INDEX_ACTIONS.has(run.action)
+  const release = INDEX_ACTIONS.has(session.action)
     ? await acquireIndexLock(s)
     : () => {};
 
   try {
-    fs.mkdirSync(runsDir(), { recursive: true });
+    fs.mkdirSync(sessionsDir(), { recursive: true });
   } catch {
     // the write stream will surface the real error if the dir is unusable
   }
-  const log = fs.createWriteStream(run.logPath, { flags: "a" });
+  const log = fs.createWriteStream(session.logPath, { flags: "a" });
 
   // Save the stage before the agent touches the card, so a restart mid-run finds
-  // the card already reading `implementing`. Runs on a real card only.
-  // Remember the stage it had first, so the end of the run can restore it (a
+  // the card already reading `implementing`. Sessions on a real card only.
+  // Remember the stage it had first, so the end of the session can restore it (a
   // `ready` card stays `ready`) instead of always dropping to `todo`.
-  const startStatus = run.cardId !== null ? RUN_STATUS[run.action] : undefined;
-  if (run.cardId !== null && startStatus) {
-    // Read the stage first (persisted with the run below, once the pid is set),
-    // then overwrite it for the duration of the run.
-    run.priorStatus = findCard(run.cardId)?.status ?? "todo";
-    setCardStatus(run.cardId, startStatus);
+  const startStatus = session.cardId !== null ? SESSION_STATUS[session.action] : undefined;
+  if (session.cardId !== null && startStatus) {
+    // Read the stage first (persisted with the session below, once the pid is
+    // set), then overwrite it for the duration of the session.
+    session.priorStatus = findCard(session.cardId)?.status ?? "todo";
+    setCardStatus(session.cardId, startStatus);
   }
 
-  const [cmd, ...args] = agentArgv();
+  const [cmd, ...args] = agentArgv(session.sessionId);
   let child;
   try {
     child = spawn(cmd, [...args, prompt], {
@@ -545,12 +559,12 @@ async function launch(s: RegistryState, run: Run, prompt: string): Promise<void>
     });
   } catch (e) {
     log.end();
-    finish(s, run, { ok: false, code: null, error: String(e) });
+    finish(s, session, { ok: false, code: null, error: String(e) });
     release();
     return;
   }
 
-  run.pid = child.pid;
+  session.pid = child.pid;
   persist(s);
 
   // stdout is the agent's NDJSON event stream (see agentArgv) — render it to
@@ -559,57 +573,43 @@ async function launch(s: RegistryState, run: Run, prompt: string): Promise<void>
   const append = (str: string) => {
     if (!str) return;
     log.write(str);
-    run.tail = (run.tail + str).slice(-TAIL_MAX);
+    session.tail = (session.tail + str).slice(-TAIL_MAX);
   };
-  // The session id lands on the first stream event; capture and persist it the
-  // moment it appears so a UI restart mid-run keeps the handoff id (adopted runs
-  // read it back from disk — they never re-parse the stream).
-  const captureSession = () => {
-    const sid = renderer.sessionId();
-    if (sid && sid !== run.sessionId) {
-      run.sessionId = sid;
-      persist(s);
-    }
-  };
-  child.stdout.on("data", (d: Buffer) => {
-    append(renderer.push(d.toString()));
-    captureSession();
-  });
+  child.stdout.on("data", (d: Buffer) => append(renderer.push(d.toString())));
   child.stderr.on("data", (d: Buffer) => append(d.toString()));
   child.on("error", (err) => {
-    run.error = String(err);
+    session.error = String(err);
     log.write(`\n[error] ${String(err)}`);
   });
   child.on("close", (code) => {
     append(renderer.flush());
-    captureSession();
     // The final message is kept off the tail (the UI shows it in its own
     // panel and folds the events away) but written to the log file — behind a
     // marker line — so the file alone is the complete, durable record and a
-    // post-restart read can split events from message again (see getRun).
+    // post-restart read can split events from message again (see getSession).
     const final = renderer.result();
     if (final) {
-      run.result = final;
+      session.result = final;
       log.write(`\n${RESULT_MARKER}\n${final}\n`);
     }
     log.end();
-    finish(s, run, { ok: code === 0, code });
+    finish(s, session, { ok: code === 0, code });
     release();
   });
 }
 
 function finish(
   s: RegistryState,
-  run: Run,
+  session: Session,
   res: { ok: boolean; code: number | null; error?: string },
 ): void {
-  run.status = res.ok ? "done" : "error";
-  run.ok = res.ok;
-  run.code = res.code;
-  if (res.error) run.error = res.error;
-  run.endedAt = Date.now();
-  clearRunStatus(run);
-  // Prune old logs first, then persist — so the saved "last run log" records
+  session.status = res.ok ? "done" : "error";
+  session.ok = res.ok;
+  session.code = res.code;
+  if (res.error) session.error = res.error;
+  session.endedAt = Date.now();
+  clearSessionStatus(session);
+  // Prune old logs first, then persist — so the saved "last session log" records
   // only ever point at files that still exist (task #14).
   pruneLogs();
   persist(s);
@@ -618,60 +618,62 @@ function finish(
 
 // --- reading the registry (for the UI poll) ---------------------------------
 
-function toView(r: Run, withTail: boolean): RunView {
+function toView(r: Session, withTail: boolean): SessionView {
   return {
-    runId: r.runId,
+    sessionId: r.sessionId,
     cardId: r.cardId,
     action: r.action,
     status: r.status,
     startedAt: r.startedAt,
     endedAt: r.endedAt,
     input: r.input,
-    sessionId: r.sessionId,
+    resumable: r.resumable,
     ok: r.ok,
     code: r.code,
     error: r.error,
-    // Terminal run whose exit we never saw (it outlived a UI restart) — the UI
-    // shows it as finished with no pass/fail mark.
+    // Terminal session whose exit we never saw (it outlived a UI restart) — the
+    // UI shows it as finished with no pass/fail mark.
     outcomeUnknown: r.status !== "running" ? r.outcomeUnknown : undefined,
-    // The agent's final message — terminal runs only; a live run has none yet.
+    // The agent's final message — terminal sessions only; a live one has none yet.
     result: r.status !== "running" ? r.result : undefined,
-    // Only terminal runs carry their tail here (the result overlay reads it);
-    // the live tail of a running agent is fetched per-run via getRun(), which
-    // reads the log file, so the board-wide poll stays light.
+    // Only terminal sessions carry their tail here (the result overlay reads it);
+    // the live tail of a running agent is fetched per-session via getSession(),
+    // which reads the log file, so the board-wide poll stays light.
     tail: withTail && r.status !== "running" ? r.tail : undefined,
   };
 }
 
-export function listRuns(): RunView[] {
+export function listSessions(): SessionView[] {
   const s = state();
   reapAdopted(s);
-  return [...s.runs.values()]
+  return [...s.sessions.values()]
     .sort((a, b) => a.startedAt - b.startedAt)
     .map((r) => toView(r, true));
 }
 
-// One run's view with its log tail read from the file (task #14). Used to watch
-// a live run and to re-open a finished run's log — the file outlives both the
-// run and a UI restart. Returns null if the run isn't in the registry.
-export function getRun(runId: string): RunView | null {
+// One session's view with its log tail read from the file (task #14). Used to
+// watch a live session and to re-open a finished one's log — the file outlives
+// both the session and a UI restart. Returns null if the session isn't in the
+// registry.
+export function getSession(sessionId: string): SessionView | null {
   const s = state();
   reapAdopted(s);
-  const r = s.runs.get(runId);
+  const r = s.sessions.get(sessionId);
   if (!r) return null;
   const view = toView(r, false);
-  // A finished run whose final message we still hold: the tail is the
+  // A finished session whose final message we still hold: the tail is the
   // in-memory event text (bounded), which the UI folds under the message —
-  // the file would repeat the message at the end. Otherwise — a live run, or
+  // the file would repeat the message at the end. Otherwise — a live session, or
   // one re-adopted after a restart — the file is the source: durable,
   // bounded, and possibly the only copy left.
   if (r.status !== "running" && r.result) {
     view.tail = r.tail;
   } else {
     const raw = readLogTail(r.logPath) ?? r.tail ?? "";
-    // A re-adopted finished run lost its parsed `result` across the restart —
+    // A re-adopted finished session lost its parsed `result` across the restart —
     // recover it from the marker in the log so the UI folds the events away, the
-    // same as an in-session run. A live run has no marker yet, so this is a no-op.
+    // same as an in-session run. A live session has no marker yet, so this is a
+    // no-op.
     const { tail, result } = splitLogResult(raw);
     view.tail = tail;
     if (result && r.status !== "running") view.result = result;

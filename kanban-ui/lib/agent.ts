@@ -29,16 +29,29 @@ function resolveCommand(): { command: string; isDefault: boolean } {
 // registry appends the prompt as a final argv entry. Exported so the registry
 // (which owns the running of agents now) shares this one resolution.
 //
-// `claude -p` in its default text mode prints nothing until the run ends, so a
-// live tail would stay empty for the whole run. Ask claude to stream NDJSON
-// events instead (lib/stream.ts renders them into log lines). Only for a
-// claude binary, and never overriding an output format the user configured.
-export function agentArgv(): string[] {
+// `claude -p` in its default text mode prints nothing until the session ends, so
+// a live tail would stay empty the whole time. Ask claude to stream NDJSON
+// events instead (lib/stream.ts renders them into log lines). We also pin the
+// session id: `--session-id <id>` makes Claude Code adopt the id we generated up
+// front, so the registry key IS Claude Code's own session id — the exact id the
+// "resume in claude code" handoff copies (`claude --resume <id>`). Both only for
+// a claude binary, and never overriding flags the user configured.
+export function agentArgv(sessionId?: string): string[] {
   const argv = resolveCommand().command.split(/\s+/).filter(Boolean);
-  if (/(^|\/)claude$/.test(argv[0] ?? "") && !argv.includes("--output-format")) {
-    argv.push("--output-format", "stream-json", "--verbose");
+  if (/(^|\/)claude$/.test(argv[0] ?? "")) {
+    if (!argv.includes("--output-format")) argv.push("--output-format", "stream-json", "--verbose");
+    if (sessionId && !argv.includes("--session-id")) argv.push("--session-id", sessionId);
   }
   return argv;
+}
+
+// True when the configured agent is the Claude Code CLI — the only agent whose
+// session is resumable (`claude --resume <id>`), so the only one the UI offers a
+// handoff for. A custom command still gets a unique session id (the registry
+// key), it just can't be resumed.
+export function isClaudeAgent(): boolean {
+  const bin = resolveCommand().command.split(/\s+/)[0] ?? "";
+  return /(^|\/)claude$/.test(bin);
 }
 
 // What the UI shows for "which agent runs the work". We only support a Claude
@@ -119,5 +132,5 @@ export function buildPrompt(req: AgentRequest): string {
 }
 
 // The agent no longer runs here. `lib/registry.ts` owns spawning: it starts the
-// child, records the run in a shared registry, returns at once, and the UI polls
-// the registry for the outcome. See startRun() there.
+// child, records the session in a shared registry, returns at once, and the UI
+// polls the registry for the outcome. See startSession() there.

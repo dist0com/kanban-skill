@@ -7,8 +7,8 @@
 import { buildPrompt, type AgentRequest } from "@/lib/agent";
 import { readBoard } from "@/lib/board";
 import { patchCard, type CardPatch } from "@/lib/edit";
-import { getRun, listRuns, startRun, type StartResult } from "@/lib/registry";
-import type { Board, RunView } from "@/lib/types";
+import { getSession, listSessions, startSession, type StartResult } from "@/lib/registry";
+import type { Board, SessionView } from "@/lib/types";
 
 export async function getBoard(): Promise<Board> {
   return readBoard();
@@ -16,28 +16,29 @@ export async function getBoard(): Promise<Board> {
 
 const ACTIONS = new Set(["implement", "reject", "archive", "edit", "create", "refine", "resolve"]);
 
-// Start an agent and return immediately with a runId (or a lock message). The
-// request never waits for the child — the client polls listRunsAction() to see
-// the run's progress and outcome.
+// Start an agent and return immediately with a sessionId (or a lock message). The
+// request never waits for the child — the client polls listSessionsAction() to
+// see the session's progress and outcome.
 export async function startAgentAction(req: AgentRequest): Promise<StartResult> {
   if (!req || !ACTIONS.has(req.action)) throw new Error("unknown action");
   if (req.action !== "create" && !Number.isInteger(req.id)) {
     throw new Error("action needs a card id");
   }
   const prompt = buildPrompt(req);
-  return startRun(req, prompt);
+  return startSession(req, prompt);
 }
 
-// The shared run registry, for the UI's poll. Every tab reads the same picture.
-export async function listRunsAction(): Promise<RunView[]> {
-  return listRuns();
+// The shared session registry, for the UI's poll. Every tab reads the same picture.
+export async function listSessionsAction(): Promise<SessionView[]> {
+  return listSessions();
 }
 
-// One run with its log tail, read from the log file. The UI polls this while a
-// run is live to tail its output, and calls it once to open a finished run's log.
-export async function getRunAction(runId: string): Promise<RunView | null> {
-  if (typeof runId !== "string" || !runId) return null;
-  return getRun(runId);
+// One session with its log tail, read from the log file. The UI polls this while
+// a session is live to tail its output, and calls it once to open a finished
+// session's log.
+export async function getSessionAction(sessionId: string): Promise<SessionView | null> {
+  if (typeof sessionId !== "string" || !sessionId) return null;
+  return getSession(sessionId);
 }
 
 export async function patchCardAction(

@@ -6,9 +6,9 @@ import { FiHelpCircle } from "react-icons/fi";
 import { getBoard } from "@/app/actions";
 import type { AgentInfo, Board } from "@/lib/types";
 import { Header } from "./Header";
-import { RunLogOverlay, RUNNING_VERB, RunningBadge } from "./agent-shared";
+import { RUNNING_VERB, RunningBadge, SessionLogOverlay } from "./agent-shared";
 import { GroupChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
-import { runningRunForCard, useAgentRuns, useRunLog } from "./runs";
+import { runningSessionForCard, useAgentSessions, useSessionLog } from "./sessions";
 
 export function BoardView({
   initialBoard,
@@ -21,10 +21,10 @@ export function BoardView({
 }) {
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
-  // The run whose log is open in the overlay, opened by clicking a card's running
-  // badge. The board has no inline run log of its own.
-  const [logRunId, setLogRunId] = useState<string | null>(null);
-  const openLog = useRunLog(logRunId);
+  // The session whose log is open in the overlay, opened by clicking a card's
+  // running badge. The board has no inline session log of its own.
+  const [logSessionId, setLogSessionId] = useState<string | null>(null);
+  const openLog = useSessionLog(logSessionId);
 
   const refresh = useCallback(async () => {
     try {
@@ -35,21 +35,21 @@ export function BoardView({
     }
   }, []);
 
-  // The board starts no runs itself (Create task lives in the header, per-card
-  // actions on the card page), so it only reads the registry — for the per-card
-  // running badges and to refresh when any run finishes.
-  const { runs } = useAgentRuns(() => {});
+  // The board starts no sessions itself (Create task lives in the header,
+  // per-card actions on the card page), so it only reads the registry — for the
+  // per-card running badges and to refresh when any session finishes.
+  const { sessions } = useAgentSessions(() => {});
 
-  // Re-read the board whenever any run finishes (from this tab or another), so
-  // created/archived/rejected cards appear or disappear without a manual reload.
+  // Re-read the board whenever any session finishes (from this tab or another),
+  // so created/archived/rejected cards appear or disappear without a manual reload.
   const prevRunning = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const now = new Set(runs.filter((r) => r.status === "running").map((r) => r.runId));
+    const now = new Set(sessions.filter((r) => r.status === "running").map((r) => r.sessionId));
     let finished = false;
     for (const id of prevRunning.current) if (!now.has(id)) finished = true;
     prevRunning.current = now;
     if (finished) refresh();
-  }, [runs, refresh]);
+  }, [sessions, refresh]);
 
   return (
     <div className="flex min-h-screen flex-col bg-nb-cream">
@@ -91,9 +91,9 @@ export function BoardView({
                   // subtasks and would undercount done work. The root's `## Todo`
                   // stays accurate across archives, so it drives the bar.
                   const isGroup = (card.subtasks?.length ?? 0) > 0;
-                  // The one live run on this card (any tab), if any. It drives the
-                  // action-named badge that stands in for the saved-stage pill.
-                  const liveRun = runningRunForCard(runs, card.id);
+                  // The one live session on this card (any tab), if any. It drives
+                  // the action-named badge that stands in for the saved-stage pill.
+                  const liveSession = runningSessionForCard(sessions, card.id);
                   return (
                   <Link
                     key={card.id}
@@ -106,14 +106,14 @@ export function BoardView({
                       </span>
                       <span className="flex items-center gap-2">
                         {isGroup && <GroupChip />}
-                        {liveRun ? (
+                        {liveSession ? (
                           <RunningBadge
-                            label={RUNNING_VERB[liveRun.action]}
+                            label={RUNNING_VERB[liveSession.action]}
                             onClick={(e) => {
                               // The card is a link; keep the click on the badge.
                               e.preventDefault();
                               e.stopPropagation();
-                              setLogRunId(liveRun.runId);
+                              setLogSessionId(liveSession.sessionId);
                             }}
                           />
                         ) : (
@@ -150,7 +150,7 @@ export function BoardView({
         </div>
       )}
 
-      {logRunId && <RunLogOverlay run={openLog} onClose={() => setLogRunId(null)} />}
+      {logSessionId && <SessionLogOverlay session={openLog} onClose={() => setLogSessionId(null)} />}
     </div>
   );
 }

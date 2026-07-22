@@ -209,21 +209,21 @@
   text-underline-offset: 2px;
 }
 
-/* A finished run's final message is prose, so it reads in the body sans font at a
-   compact log scale (code blocks keep their mono via .nb-md code). */
-.nb-runlog-md {
+/* A finished session's final message is prose, so it reads in the body sans font
+   at a compact log scale (code blocks keep their mono via .nb-md code). */
+.nb-sessionlog-md {
   font-size: 13px;
   line-height: 1.6;
 }
-.nb-runlog-md > * + *:not(h1):not(h2):not(h3):not(h4) {
+.nb-sessionlog-md > * + *:not(h1):not(h2):not(h3):not(h4) {
   margin-top: 9px;
 }
-.nb-runlog-md :where(h1, h2, h3, h4) {
+.nb-sessionlog-md :where(h1, h2, h3, h4) {
   margin-top: 14px;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0;
 }
-.nb-runlog-md :where(ul, ol) {
+.nb-sessionlog-md :where(ul, ol) {
   padding-left: 16px;
 }

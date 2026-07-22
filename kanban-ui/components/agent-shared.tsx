@@ -1,18 +1,18 @@
 "use client";
 
-// Shared agent-run plumbing used by both the board (Create task) and the card
-// page (per-card actions): the request/result shapes, the running + result
+// Shared agent-session plumbing used by both the board (Create task) and the
+// card page (per-card actions): the request/result shapes, the running + result
 // overlays, and the input dialogs for each action.
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiCopy } from "react-icons/fi";
-import type { AgentAction, Card, RunView } from "@/lib/types";
+import type { AgentAction, Card, SessionView } from "@/lib/types";
 import { Button } from "./button";
 import { Dialog } from "./Dialog";
 import { Markdown } from "./Markdown";
 
-// Run-log chrome as Tailwind utilities, colocated with the markup that uses it.
+// Session-log chrome as Tailwind utilities, colocated with the markup that uses it.
 // The pulse dot (shared by the running badge and the live title bar) references
 // the nbPulse keyframe still defined in globals.css.
 const PULSE_DOT =
@@ -47,10 +47,10 @@ export type DialogState =
   | { kind: "create" }
   | null;
 
-// A small inline "running" pill. Runs are non-blocking now (task #12): several
-// agents can work at once and the user keeps using the UI, so instead of one
-// full-screen overlay each running card shows this badge. Pass onClick to make
-// it open the run's log (task #14) — e.g. from a card on the board.
+// A small inline "running" pill. Sessions are non-blocking now (task #12):
+// several agents can work at once and the user keeps using the UI, so instead of
+// one full-screen overlay each running card shows this badge. Pass onClick to
+// make it open the session's log (task #14) — e.g. from a card on the board.
 export function RunningBadge({
   label,
   onClick,
@@ -64,7 +64,7 @@ export function RunningBadge({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
-      title={onClick ? "watch the run log" : label ? `${label} — running` : "agent running"}
+      title={onClick ? "watch the session log" : label ? `${label} — running` : "agent running"}
       style={{
         background: "var(--color-nb-accent-soft)",
         color: "var(--color-nb-accent-deep)",
@@ -77,7 +77,7 @@ export function RunningBadge({
   );
 }
 
-// Present-participle label for a live run, so the single mark a card shows while
+// Present-participle label for a live session, so the single mark a card shows while
 // busy names WHICH action is in flight (implementing / refining / resolving / …)
 // instead of a generic "running". The badge always replaces the saved-stage pill
 // (one mark per card, never both), so this is the one place the running action is
@@ -93,7 +93,7 @@ export const RUNNING_VERB: Record<AgentAction, string> = {
 };
 
 // The live tail is the agent's event stream — tool calls and turn text — so it
-// reads mono. A finished run leads with the agent's final message (markdown)
+// reads mono. A finished session leads with the agent's final message (markdown)
 // and folds the intermediate events away underneath.
 const MONO_TEXT = {
   whiteSpace: "pre-wrap",
@@ -101,46 +101,46 @@ const MONO_TEXT = {
   fontSize: 12,
 } as const;
 
-// A tailing view of one run's captured output (task #14). Shows the last few KB;
-// auto-scrolls to the newest line unless the user has scrolled up to read back.
-// Once the run ends with a parsed final message, the view leads with that
-// message and the intermediate events fold into a collapsed row above it.
-// `run` is the polled RunView (see useRunLog); null renders nothing.
-export function RunLog({
-  run,
+// A tailing view of one session's captured output (task #14). Shows the last few
+// KB; auto-scrolls to the newest line unless the user has scrolled up to read
+// back. Once the session ends with a parsed final message, the view leads with
+// that message and the intermediate events fold into a collapsed row above it.
+// `session` is the polled SessionView (see useSessionLog); null renders nothing.
+export function SessionLog({
+  session,
   collapsed = false,
   onToggle,
   openIds,
   flush = false,
 }: {
-  run: RunView | null;
+  session: SessionView | null;
   collapsed?: boolean;
   onToggle?: () => void;
   openIds?: number[];
   // `flush` drops the collapse toggle and the body's height cap (the panel it's
-  // dropped into — the runs dialog, the board overlay — owns the scrolling) but
-  // keeps the full ink-framed window with its title bar, so the log is the same
-  // artifact everywhere it appears. The collapsible form is for the inline
+  // dropped into — the sessions dialog, the board overlay — owns the scrolling)
+  // but keeps the full ink-framed window with its title bar, so the log is the
+  // same artifact everywhere it appears. The collapsible form is for the inline
   // card-page log.
   flush?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
-  const tail = (run?.tail || "").trim();
-  const result = (run?.result || "").trim();
+  const tail = (session?.tail || "").trim();
+  const result = (session?.result || "").trim();
 
   useEffect(() => {
     const el = ref.current;
     if (el && pinned.current) el.scrollTop = el.scrollHeight;
   }, [tail]);
 
-  if (!run) return null;
-  const running = run.status === "running";
-  // A run that outlived a UI restart finished out of our sight: show it as done
-  // with no pass/fail mark — don't guess an outcome we never saw.
-  const unknown = !running && run.outcomeUnknown;
+  if (!session) return null;
+  const running = session.status === "running";
+  // A session that outlived a UI restart finished out of our sight: show it as
+  // done with no pass/fail mark — don't guess an outcome we never saw.
+  const unknown = !running && session.outcomeUnknown;
   // No word while running — the pulse dot already signals progress.
-  const state = running ? "" : unknown ? "finished" : run.ok ? "done" : `exited ${run.code ?? "?"}`;
+  const state = running ? "" : unknown ? "finished" : session.ok ? "done" : `exited ${session.code ?? "?"}`;
 
   // Live/passed/failed/unknown indicator, shared by both layouts.
   const indicator = running ? (
@@ -149,7 +149,7 @@ export function RunLog({
     // Neutral dot — finished, but outcome unknown, so no ✓/✕.
     <span aria-hidden style={{ color: "var(--color-nb-ink-soft)" }}>•</span>
   ) : (
-    <span aria-hidden style={{ color: "var(--color-nb-accent-deep)" }}>{run.ok ? "✓" : "✕"}</span>
+    <span aria-hidden style={{ color: "var(--color-nb-accent-deep)" }}>{session.ok ? "✓" : "✕"}</span>
   );
 
   // The log body, shared by both layouts.
@@ -173,30 +173,30 @@ export function RunLog({
           </pre>
         </details>
       )}
-      <Markdown body={result} openIds={openIds} className="nb-runlog-md" />
+      <Markdown body={result} openIds={openIds} className="nb-sessionlog-md" />
     </>
   ) : tail ? (
-    // No parsed final message (custom agent command, or a run re-adopted after a
-    // restart) — the tail is all there is.
-    <Markdown body={tail} openIds={openIds} className="nb-runlog-md" />
+    // No parsed final message (custom agent command, or a session re-adopted
+    // after a restart) — the tail is all there is.
+    <Markdown body={tail} openIds={openIds} className="nb-sessionlog-md" />
   ) : (
     <pre className="m-0 text-nb-ink-soft" style={MONO_TEXT}>
       (no output)
     </pre>
   );
 
-  // The title bar — the "run log" kicker + the live/done indicator on a gradient
-  // strip. Shared by both forms; only the card-page form passes onToggle, which
-  // also makes it the expand/collapse control.
+  // The title bar — the "session log" kicker + the live/done indicator on a
+  // gradient strip. Shared by both forms; only the card-page form passes
+  // onToggle, which also makes it the expand/collapse control.
   const titleBar = (
     <div
       className={`flex items-center gap-2.5 px-3 py-1 rounded-t-[12.5px] bg-[linear-gradient(var(--color-nb-cream),color-mix(in_srgb,var(--color-nb-ink)_9%,var(--color-nb-cream)))]${collapsed ? " rounded-b-[12.5px]" : " border-b-[1.5px] border-nb-ink"}${onToggle ? " cursor-pointer select-none" : ""}`}
       role={onToggle ? "button" : undefined}
       aria-expanded={onToggle ? !collapsed : undefined}
-      aria-label={onToggle ? (collapsed ? "Expand run log" : "Collapse run log") : undefined}
+      aria-label={onToggle ? (collapsed ? "Expand session log" : "Collapse session log") : undefined}
       onClick={onToggle}
     >
-      <span className="nb-tag">run log</span>
+      <span className="nb-tag">session log</span>
       <span className="ml-auto flex items-center gap-1.5">
         {indicator}
         {state && <span className="text-[11px] text-nb-ink-soft">{state}</span>}
@@ -220,8 +220,8 @@ export function RunLog({
   );
 
   // Flush: the same ink-framed window, minus the collapse toggle and the body's
-  // height cap — the panel it's dropped into (the runs dialog / board overlay)
-  // owns the scrolling, so the log flows at full length inside the frame.
+  // height cap — the panel it's dropped into (the sessions dialog / board
+  // overlay) owns the scrolling, so the log flows at full length inside the frame.
   if (flush) {
     return (
       <div className="nb-outline overflow-hidden bg-nb-paper">
@@ -244,11 +244,11 @@ export function RunLog({
   );
 }
 
-// The handoff control: copy this run's claude-code session id so the same
+// The handoff control: copy this session's claude-code session id so the same
 // conversation can be resumed on the command line (`claude --resume <id>`). The
 // UI can't launch a terminal, so the copy IS the handoff — the id is the one
-// thing you need to carry across. Shows a brief check on copy; only rendered
-// when the run actually carries a session id (a claude run, id already parsed).
+// thing you need to carry across. Shows a brief check on copy; only rendered for
+// a resumable (claude) session, whose id claude runs under.
 export function HandoffButton({ sessionId }: { sessionId: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -282,13 +282,13 @@ export function HandoffButton({ sessionId }: { sessionId: string }) {
   );
 }
 
-// The run log in a modal, opened from a running badge on a board card. Like
+// The session log in a modal, opened from a running badge on a board card. Like
 // Dialog, the fixed scrim is portaled to <body>: the sticky
 // header has a `backdrop-filter`, which would otherwise become the containing
 // block for the fixed scrim and trap it inside the header (the board then paints
 // over it). The panel is height-capped so a long log scrolls instead of running
 // off-screen.
-export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: () => void }) {
+export function SessionLogOverlay({ session, onClose }: { session: SessionView | null; onClose: () => void }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -299,15 +299,16 @@ export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // A create run touches no card, so it has no `#id — action` handle: name it by
-  // what it's doing instead. Every other run is tied to a card and reads `#5 — refine`.
-  const title = !run
-    ? "run log"
-    : run.cardId === null
-      ? run.status === "running"
+  // A create session touches no card, so it has no `#id — action` handle: name it
+  // by what it's doing instead. Every other session is tied to a card and reads
+  // `#5 — refine`.
+  const title = !session
+    ? "session log"
+    : session.cardId === null
+      ? session.status === "running"
         ? "Creating task"
         : "Create task"
-      : `#${run.cardId} — ${run.action}`;
+      : `#${session.cardId} — ${session.action}`;
 
   if (!mounted) return null;
 
@@ -321,12 +322,12 @@ export function RunLogOverlay({ run, onClose }: { run: RunView | null; onClose: 
         <div className="flex shrink-0 items-center justify-between px-5 py-3" style={{ borderBottom: "1.5px solid var(--color-nb-ink)" }}>
           <h2 className="text-[15px] font-[800]">{title}</h2>
           <div className="flex items-center gap-3">
-            {run?.sessionId && <HandoffButton sessionId={run.sessionId} />}
+            {session?.resumable && session.sessionId && <HandoffButton sessionId={session.sessionId} />}
             <button aria-label="Close" className="text-[18px] text-nb-ink-soft hover:text-nb-ink" onClick={onClose}>×</button>
           </div>
         </div>
         <div className="overflow-y-auto p-4">
-          <RunLog run={run} flush />
+          <SessionLog session={session} flush />
         </div>
       </div>
     </div>,
@@ -366,7 +367,7 @@ export function ActionDialog({
         <textarea className={INPUT} rows={4} placeholder="Optional extra notes for the agent…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel={notReady ? "Implement anyway" : "Run implement"}
+          confirmLabel={notReady ? "Implement anyway" : "Implement"}
           onConfirm={() => onRun({ action: "implement", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Implement #${dialog.card.id}`)}
         />
       </Dialog>
@@ -382,7 +383,7 @@ export function ActionDialog({
         <textarea className={INPUT} rows={3} placeholder="Why are you rejecting this?" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run reject"
+          confirmLabel="Reject"
           disabled={!text.trim()}
           onConfirm={() => onRun({ action: "reject", id: dialog.card.id, title: dialog.card.title, reason: text.trim() }, `Reject #${dialog.card.id}`)}
         />
@@ -399,7 +400,7 @@ export function ActionDialog({
         <textarea className={INPUT} rows={3} placeholder="Optional note for the agent…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run archive"
+          confirmLabel="Archive"
           onConfirm={() => onRun({ action: "archive", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Archive #${dialog.card.id}`)}
         />
       </Dialog>
@@ -422,7 +423,7 @@ export function ActionDialog({
         />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run edit"
+          confirmLabel="Save edit"
           disabled={!text.trim()}
           onConfirm={() => onRun({ action: "edit", id: dialog.card.id, title: dialog.card.title, notes: text.trim() }, `Edit #${dialog.card.id}`)}
         />
@@ -440,7 +441,7 @@ export function ActionDialog({
         <textarea className={INPUT} rows={3} placeholder="Optional note to steer the refine…" value={text} onChange={(e) => setText(e.target.value)} />
         <DialogButtons
           onClose={onClose}
-          confirmLabel="Run refine"
+          confirmLabel="Refine"
           onConfirm={() => onRun({ action: "refine", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Refine #${dialog.card.id}`)}
         />
       </Dialog>
@@ -448,21 +449,7 @@ export function ActionDialog({
   }
 
   if (dialog.kind === "resolve") {
-    return (
-      <Dialog title={`Resolve #${dialog.card.id}`} onClose={onClose}>
-        <p className={INTRO}>
-          The card is waiting on open questions. The agent researches each one and decides what the
-          evidence settles, writing the answers into the card. Real judgment calls stay as open
-          questions for you to answer later.
-        </p>
-        <textarea className={INPUT} rows={3} placeholder="Optional note to steer the resolve…" value={text} onChange={(e) => setText(e.target.value)} />
-        <DialogButtons
-          onClose={onClose}
-          confirmLabel="Run resolve"
-          onConfirm={() => onRun({ action: "resolve", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Resolve #${dialog.card.id}`)}
-        />
-      </Dialog>
-    );
+    return <ResolveDialog card={dialog.card} onClose={onClose} onRun={onRun} />;
   }
 
   // create
@@ -474,12 +461,89 @@ export function ActionDialog({
       <textarea className={INPUT} rows={5} placeholder="What do you want to happen?" value={text} onChange={(e) => setText(e.target.value)} />
       <DialogButtons
         onClose={onClose}
-        confirmLabel="Run create"
+        confirmLabel="Create task"
         disabled={!text.trim()}
         onConfirm={() => onRun({ action: "create", description: text.trim() }, "Create task")}
       />
     </Dialog>
   );
+}
+
+// Resolve is the one action with structured input: a card carries a *list* of
+// open questions, so the dialog gives each its own answer box instead of one
+// catch-all note. Answers are optional — leave a box blank and the agent
+// researches that question itself (see references/resolve.md). Its own component
+// so the per-question answer array is a clean, unconditional hook.
+function ResolveDialog({
+  card,
+  onClose,
+  onRun,
+}: {
+  card: Card;
+  onClose: () => void;
+  onRun: (req: AgentReq, label: string) => void;
+}) {
+  const [answers, setAnswers] = useState<string[]>(() => card.questions.map(() => ""));
+
+  const setAnswer = (i: number, value: string) =>
+    setAnswers((prev) => prev.map((a, j) => (j === i ? value : a)));
+
+  return (
+    <Dialog title={`Resolve #${card.id}`} onClose={onClose}>
+      <p className={INTRO}>
+        Answer any open questions you already know. The agent researches the rest and decides what
+        the evidence settles, writing every answer into the card. Real judgment calls stay open for
+        you.
+      </p>
+      <div className="flex flex-col gap-3.5">
+        {card.questions.map((q, i) => (
+          <div key={i} className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-[700] leading-snug text-nb-ink">
+              <span className="mr-1.5 text-nb-accent-deep">?</span>
+              {q}
+            </label>
+            <textarea
+              className={INPUT}
+              rows={2}
+              placeholder="Your answer, or leave blank for the agent to research…"
+              value={answers[i]}
+              onChange={(e) => setAnswer(i, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+      <DialogButtons
+        onClose={onClose}
+        confirmLabel="Resolve"
+        onConfirm={() =>
+          onRun(
+            {
+              action: "resolve",
+              id: card.id,
+              title: card.title,
+              notes: composeAnswers(card.questions, answers),
+            },
+            `Resolve #${card.id}`,
+          )
+        }
+      />
+    </Dialog>
+  );
+}
+
+// Pair the questions the user answered with their answers into a note block the
+// agent can fold into the card. Blank answers are dropped — those are the ones
+// the agent researches — and if nothing was answered we send no note at all, so
+// the agent resolves every question on its own just as before.
+function composeAnswers(questions: string[], answers: string[]): string | undefined {
+  const answered = questions
+    .map((q, i) => ({ q, a: answers[i]?.trim() }))
+    .filter((x) => x.a);
+  if (answered.length === 0) return undefined;
+  return [
+    "My answers to some of the open questions — fold these in, and research the rest:",
+    ...answered.map(({ q, a }) => `Q: ${q}\nA: ${a}`),
+  ].join("\n\n");
 }
 
 export function DialogButtons({
