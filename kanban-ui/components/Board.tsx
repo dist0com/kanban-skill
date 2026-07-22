@@ -14,10 +14,12 @@ export function BoardView({
   initialBoard,
   initialError,
   agent,
+  projectRoot,
 }: {
   initialBoard: Board | null;
   initialError: string | null;
   agent: AgentInfo;
+  projectRoot: string;
 }) {
   const [board, setBoard] = useState<Board | null>(initialBoard);
   const [error, setError] = useState<string | null>(initialError);
@@ -52,8 +54,8 @@ export function BoardView({
   }, [sessions, refresh]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-nb-cream">
-      <Header agent={agent} />
+    <div className="flex h-screen flex-col overflow-hidden bg-nb-cream">
+      <Header agent={agent} projectRoot={projectRoot} />
 
       {error && (
         <div className="mx-6 mt-4 nb-panel-sm p-3 text-[13px]" style={{ background: "var(--color-nb-peach-soft)" }}>
@@ -66,7 +68,7 @@ export function BoardView({
       )}
 
       {board && (
-        <div className="flex flex-1 items-stretch gap-4 overflow-x-auto p-6">
+        <div className="flex min-h-0 flex-1 items-stretch gap-4 overflow-x-auto p-6">
           {board.columns.map((col) => (
             <section
               key={col.track}
@@ -80,7 +82,7 @@ export function BoardView({
                 </h2>
                 <span className="text-[12px] text-nb-ink-soft">{col.cards.length}</span>
               </div>
-              <div className="flex flex-1 flex-col gap-3">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1">
                 {col.cards.length === 0 && (
                   <p className="text-[12px] italic text-nb-ink-soft">no open cards</p>
                 )}

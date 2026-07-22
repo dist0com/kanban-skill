@@ -1,6 +1,7 @@
 import { BoardView } from "@/components/Board";
 import { agentInfo } from "@/lib/agent";
 import { readBoard } from "@/lib/board";
+import { repoRoot } from "@/lib/paths";
 import type { Board } from "@/lib/types";
 
 // Read the board on the server for the first paint (no loading flash); the
@@ -15,5 +16,12 @@ export default function Page() {
   } catch (e) {
     initialError = e instanceof Error ? e.message : String(e);
   }
-  return <BoardView initialBoard={initialBoard} initialError={initialError} agent={agentInfo()} />;
+  return (
+    <BoardView
+      initialBoard={initialBoard}
+      initialError={initialError}
+      agent={agentInfo()}
+      projectRoot={repoRoot()}
+    />
+  );
 }

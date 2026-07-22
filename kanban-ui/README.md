@@ -63,8 +63,10 @@ serves the latest UI and your setting is never touched by an update.
 
 - **Columns by track**, a read-only **Done** view from `archive.md`, and a card detail view
   that renders the card body as Markdown.
-- **Buttons per card** — Implement, Review, Reject, Archive, Create — each hand a prompt to
-  the agent, then the board refreshes when it finishes.
+- **Buttons per card** — only the ones that fit the card's state show. Implement (unless every
+  todo is checked), Edit (always), Refine (a `todo` card with no open questions and unfinished
+  todos), Resolve (the card has open questions), Archive (every todo is checked), and Reject
+  (always). Each hands a prompt to the agent, then the board refreshes when it finishes.
 - **Direct edits** — the title/body and the priority/ROI dropdowns save straight to the file;
   everything that touches ids or metrics goes through the agent and the skill's script.
 

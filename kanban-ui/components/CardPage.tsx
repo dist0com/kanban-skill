@@ -32,6 +32,27 @@ import { latestSessionForCard, runningCardIds, runningSessionForCard, type Start
 
 const CAP = "text-[10px] font-[700] uppercase tracking-[0.08em] text-nb-ink-soft";
 
+type CardButton = "implement" | "edit" | "refine" | "resolve" | "archive" | "reject";
+
+// The one place that maps a card's state to the buttons that fit it (task #29).
+// Inputs are the whole card state: `status`, open questions, todo progress. Each
+// button has exactly one rule, and every state combination falls out of them —
+// read top to bottom to see all the states at a glance.
+function visibleActions(card: Card): Set<CardButton> {
+  const hasQuestions = card.questions.length > 0;
+  const { total, done } = card.todos;
+  const allDone = total > 0 && done === total; // zero-todo cards never count as done
+  const isGroup = (card.subtasks?.length ?? 0) > 0; // a group root is implemented by finishing its subtasks
+  const buttons = new Set<CardButton>();
+  if (!allDone && !isGroup) buttons.add("implement"); // Implement — unless all todos are checked, and never on a group root
+  buttons.add("edit"); // Edit — always
+  if (card.status === "todo" && !hasQuestions && !allDone) buttons.add("refine"); // Refine — todo, no questions, unfinished todos
+  if (hasQuestions) buttons.add("resolve"); // Resolve — has open questions
+  if (allDone) buttons.add("archive"); // Archive — all todos checked
+  buttons.add("reject"); // Reject — always
+  return buttons;
+}
+
 // One meta column: micro-caption stacked over its value. Columns flow
 // horizontally and wrap, so the box stays one shallow band instead of a tall
 // stack of full-width rows. Every value is chip-height, so rows self-align.
@@ -44,7 +65,17 @@ function MetaItem({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-export function CardPage({ card, openIds, agent }: { card: Card; openIds: number[]; agent: AgentInfo }) {
+export function CardPage({
+  card,
+  openIds,
+  agent,
+  projectRoot,
+}: {
+  card: Card;
+  openIds: number[];
+  agent: AgentInfo;
+  projectRoot: string;
+}) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +99,7 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
   // The session itself, so the badge can name the action in flight (refining, etc.).
   const liveSession = runningSessionForCard(sessions, card.id);
   const { total, done } = card.todos;
-  const allDone = total > 0 && done === total;
+  const actions = visibleActions(card);
 
   // Tail the newest session on this card: live while it runs, and re-openable once
   // it's done so the user can read back what the agent did (task #14).
@@ -105,7 +136,7 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
 
   return (
     <div className="flex min-h-screen flex-col bg-nb-cream">
-      <Header agent={agent} />
+      <Header agent={agent} projectRoot={projectRoot} />
 
       <main className="mx-auto w-full max-w-[840px] px-6 py-6">
         {error && (
@@ -140,46 +171,52 @@ export function CardPage({ card, openIds, agent }: { card: Card; openIds: number
           )}
         </div>
 
-        {/* toolbar */}
+        {/* toolbar — the state machine (visibleActions) decides which buttons
+            fit the card's state; busy still disables every one that shows. */}
         <div className="mb-5 flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={busy} onClick={() => setDialog({ kind: "implement", card })}>
-            <FiPlay className="text-[15px]" aria-hidden />
-            Implement
-          </Button>
-          <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "edit", card })}>
-            <FiEdit2 className="text-[15px]" aria-hidden />
-            Edit
-          </Button>
-          {/* One slot: Resolve while the card has open questions (a refine is
-              blocked until they're cleared), otherwise Refine. Never both. */}
-          {card.questions.length > 0 ? (
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "resolve", card })}>
-              <FiHelpCircle className="text-[15px]" aria-hidden />
-              Resolve
+          {actions.has("implement") && (
+            <Button size="sm" disabled={busy} onClick={() => setDialog({ kind: "implement", card })}>
+              <FiPlay className="text-[15px]" aria-hidden />
+              Implement
             </Button>
-          ) : (
+          )}
+          {actions.has("edit") && (
+            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "edit", card })}>
+              <FiEdit2 className="text-[15px]" aria-hidden />
+              Edit
+            </Button>
+          )}
+          {actions.has("refine") && (
             <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "refine", card })}>
               <FiTrendingUp className="text-[15px]" aria-hidden />
               Refine
             </Button>
           )}
-          {allDone && (
+          {actions.has("resolve") && (
+            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "resolve", card })}>
+              <FiHelpCircle className="text-[15px]" aria-hidden />
+              Resolve
+            </Button>
+          )}
+          {actions.has("archive") && (
             <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDialog({ kind: "archive", card })}>
               <FiArchive className="text-[15px]" aria-hidden />
               Archive
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto"
-            disabled={busy}
-            style={{ color: "var(--color-nb-accent-deep)", borderColor: "var(--color-nb-accent-deep)" }}
-            onClick={() => setDialog({ kind: "reject", card })}
-          >
-            <FiXCircle className="text-[15px]" aria-hidden />
-            Reject
-          </Button>
+          {actions.has("reject") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              disabled={busy}
+              style={{ color: "var(--color-nb-accent-deep)", borderColor: "var(--color-nb-accent-deep)" }}
+              onClick={() => setDialog({ kind: "reject", card })}
+            >
+              <FiXCircle className="text-[15px]" aria-hidden />
+              Reject
+            </Button>
+          )}
         </div>
 
         {/* Session log: the live tail while an agent works, and a re-openable view
