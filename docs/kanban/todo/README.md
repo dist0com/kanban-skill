@@ -22,6 +22,9 @@ _(none)_
 
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
+- [#31 Advanced memory: a structured memory layer for planning](31-advanced-memory/root.md)
+  - [#32 Explore what the memory layer should hold](31-advanced-memory/skill/32-explore-what-the-memory-layer-should-hold.md)
+  - [#33 Map the project's modules at setup and keep the map fresh](31-advanced-memory/skill/33-map-project-modules-at-setup-and-keep-the-map-fresh.md)
 
 ## docs
 
@@ -31,3 +34,4 @@ _(none)_
 
 - [#2 List on a second marketplace and decide the site](distribution/02-second-marketplace-and-site.md)
 - [#5 Position against Vibe Kanban and target the winnable keywords](distribution/05-vibe-kanban-positioning.md)
+- [#30 Translate the site into Chinese, Spanish, Japanese, and French](distribution/30-translate-the-site-into-chinese-spanish-japanese-and-french.md)
