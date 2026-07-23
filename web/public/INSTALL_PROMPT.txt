@@ -44,14 +44,19 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
    folder per track, `next-id` set to `1`, and empty `archive.md`, `rejected.md`,
    `redesign.md`, `memory.md`. It's safe to re-run — it does nothing if a board exists.
 
-7. Stamp the installed version so later updates know where they're starting from:
+7. Write the module map. Follow `.claude/skills/kanban/references/module-map.md` to write
+   `docs/kanban/modules.md` — a plain list of what parts this project is made of. Reuse the
+   repo analysis you already did in step 3; don't scan again. Print the finished map so I
+   see it once. The propose flow reads this map to pick a focus area.
+
+8. Stamp the installed version so later updates know where they're starting from:
 
        printf 'sha: %s\ndate: %s\n' "$(git -C /tmp/kanban-skill rev-parse HEAD)" "$(date +%F)" > .claude/skills/kanban/.version
 
-8. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
+9. Run `node .claude/skills/kanban/kanban.mjs peek` to confirm the script finds the board,
    then propose the first 3 tasks so I have something to start from.
 
-9. Recommend the local board UI and ask if I want it — don't silently skip it. It's the
+10. Recommend the local board UI and ask if I want it — don't silently skip it. It's the
    nicest way to use the board: a local Next.js app that shows every track and drives the
    work from buttons instead of the terminal, while the `docs/kanban/` files stay the single
    source of truth. Tell me it runs with one command, nothing to install or compile:

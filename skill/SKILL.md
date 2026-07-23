@@ -26,26 +26,32 @@ get it in one pass.
 
 ## Layout
 
-- `docs/kanban/todo/` — open tasks.
-  - `README.md` — the index. Read it first.
-  - `blockers/` — hard blockers. These gate the next milestone. Clear them first.
-  - one folder per track (see your tracks in Configuration), one card per file.
-  - `recurring/` — jobs we repeat on a cadence (see "Recurring task"). Its own folder
-    parallel to the track folders; one card per file, and they never archive.
-- `docs/kanban/archive.md` — shipped work, grouped by product area (topics), in plain
-  language. No task ids. Read before proposing so you don't re-suggest shipped work.
-- `docs/kanban/rejected.md` — ideas we turned down, grouped by product area (topics).
-  One line each: the idea, and why we said no. No task ids. Read before proposing so you
-  don't re-suggest them. Rejecting is rare; focus this file on what to avoid.
-- `docs/kanban/redesign.md` — design mistakes to avoid when writing a card, grouped by
-  product area (topics). One entry each: the mistake, then the design we actually want.
-  Read before writing or reviewing a card so a new card doesn't repeat a wrong plan.
-- `docs/kanban/memory.md` (or `docs/kanban/memory/*.md`) — short notes from past scans,
-  written from the user's standpoint, so a new loop builds on them.
-- `docs/kanban/next-id` — one number: the next free task id. **Never edit by hand** —
-  only the script writes it (see "The script").
-- `docs/kanban/metrics.csv` — one row per day: completed, created, rejected. The script
-  keeps it; you never touch it.
+```
+docs/kanban/
+├── todo/           open tasks
+│   ├── README.md   the index — read it first
+│   ├── blockers/   hard blockers; they gate the next milestone — clear them first
+│   ├── <track>/    one folder per track (see Configuration), one card per file
+│   └── recurring/  jobs on a cadence (see "Recurring task") — one card per file,
+│                   never archived
+├── archive.md      shipped work, by product area, plain language, no task ids
+├── rejected.md     ideas we said no to, by product area — one line each: the idea
+│                   and why. Rejecting is rare; focus this file on what to avoid
+├── redesign.md     design mistakes, by product area — each entry: the mistake,
+│                   then the design we actually want
+├── memory.md       short notes from past scans, written from the user's
+│                   standpoint, so a new loop builds on them (or memory/*.md)
+├── modules.md      one line per module — install writes it, the propose flow
+│                   reads it to pick a focus area (see "The module map")
+├── next-id         the next free task id — NEVER edit by hand; only the script
+│                   writes it (see "The script")
+└── metrics.csv     one row per day: completed, created, rejected — the script
+                    keeps it; you never touch it
+```
+
+Before proposing, read `archive.md` and `rejected.md` so you don't re-suggest shipped
+or rejected work. Before writing or reviewing a card, read `redesign.md` so a new card
+doesn't repeat a wrong plan.
 
 ## The script
 
@@ -251,6 +257,14 @@ from your repo root with `npx kanban-skill-ui` (localhost only). Full guide in
 ## Updating the skill and local UI
 
 Pulling a newer version into a project you already installed it in. Full guide in `references/update.md`.
+
+## The module map
+
+`docs/kanban/modules.md` lists what parts the project is made of — the skill, the local
+UI, the site — one line per module. Install writes it, and the propose flow reads it to
+pick a focus area. It stays true by one rule: whoever reads it and sees a line disagree
+with the repo fixes that line in the same run. To write it from scratch or rebuild it,
+follow `references/module-map.md`.
 
 ## Auto-pruning
 

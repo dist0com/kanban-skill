@@ -6,9 +6,7 @@ roi: high
 status: todo
 blocked_by: []
 related: []
-questions:
-  - Beyond a module map, what facts should the memory hold — project goals, users, code conventions, what shipped recently?
-  - Should the scan notes stay in one memory.md, or split into one file per topic under docs/kanban/memory/? (The module map is out of this — it lives flat at docs/kanban/modules.md.)
+questions: []
 ---
 
 The skill has no structured memory of the project. When an agent proposes tasks, it
@@ -28,9 +26,27 @@ what the memory should hold.
   touches (#34). No clock and no git check keeps the map current: the field
   catches new modules (#34), and every reader fixes lines that no longer match
   the repo (#33).
-- Explore what else belongs in memory and how the propose flow should read it (#32).
+
+## Decisions
+
+- **What the memory holds beyond the module map.** Keep project goals, and nothing
+  new past that. Each memory path gets a fixed six-file set (#36): a current-status
+  note (`readme.md`), a user-owned direction note (`goal.md` — the goals), settled
+  question answers (`decisions.md`), and the `redesign.md` / `archive.md` /
+  `rejected.md` files the board already keeps. Target users and code conventions are
+  out — they don't move the choice of next task enough to be worth maintaining.
+  "What shipped recently" needs no new fact; `archive.md` already covers it.
+- **One shared memory or split.** Split, one memory per module, at
+  `docs/kanban/memory/<module>/` (#35), each holding the same six-file set (#36).
+  Not one flat `memory.md`, and not one-file-per-topic — the module a card names
+  (#34) picks which copy a write lands in, so a module's notes stay with that module.
+  Umbrella-wide work reads the board-root copy of the set. The module map is not
+  memory: it stays flat at `docs/kanban/modules.md`, since the script parses it and
+  the prune flow would mangle it (#33).
 
 ## Todo
 - [ ] Explore what the memory layer should hold #32
-- [ ] Map the project's modules at setup #33
+- [x] Map the project's modules at setup #33
 - [ ] Tag each task with the modules it touches #34
+- [ ] Give each module its own memory path #35
+- [ ] Fill each module's memory with a fixed set of files #36

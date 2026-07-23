@@ -22,9 +22,9 @@ _(none)_
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
 - [#31 Advanced memory: a structured memory layer for planning](31-advanced-memory/root.md)
-  - [#32 Explore what the memory layer should hold](31-advanced-memory/skill/32-explore-what-the-memory-layer-should-hold.md)
-  - [#33 Map the project's modules at setup](31-advanced-memory/skill/33-map-the-projects-modules-at-setup.md)
   - [#34 Tag each task with the modules it touches](31-advanced-memory/skill/34-tag-each-task-with-the-modules-it-touches.md)
+  - [#35 Give each module its own memory path](31-advanced-memory/skill/35-per-module-memory-path.md)
+  - [#36 Fill each module's memory with a fixed set of files](31-advanced-memory/skill/36-module-memory-files.md)
 
 ## docs
 

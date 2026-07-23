@@ -16,6 +16,9 @@ you don't re-suggest something already done.
   the codebase, asks a few questions, and fills the Configuration.
 - One command scaffolds a fresh board — the folders, the index, and the starter files —
   so setting up in a new project no longer means creating them by hand.
+- Setup now writes a module map — a plain list of what parts your project is made of — so
+  when the agent proposes work it picks a focus from that list instead of guessing from
+  the code each time. Readers keep the list current as the project changes.
 
 ## Board format
 

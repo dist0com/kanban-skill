@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiCopy } from "react-icons/fi";
+import { useDraft, useDraftList } from "@/lib/draft";
 import type { AgentAction, Card, SessionView } from "@/lib/types";
 import { Button } from "./button";
 import { Dialog } from "./Dialog";
@@ -346,7 +347,15 @@ export function ActionDialog({
   onClose: () => void;
   onRun: (req: AgentReq, label: string) => void;
 }) {
-  const [text, setText] = useState("");
+  // Persist the draft per action + card so an accidental close keeps the text
+  // (resolve keeps its own list-shaped draft in ResolveDialog below). `run`
+  // clears the draft once the session has actually started.
+  const draftKey = dialog.kind === "create" ? "create" : `${dialog.kind}:${dialog.card.id}`;
+  const [text, setText, clearDraft] = useDraft(draftKey);
+  const run = (req: AgentReq, label: string) => {
+    clearDraft();
+    onRun(req, label);
+  };
 
   if (dialog.kind === "implement") {
     // Warn but allow: `ready` means the plan is vetted and safe to build. On any
@@ -368,7 +377,7 @@ export function ActionDialog({
         <DialogButtons
           onClose={onClose}
           confirmLabel={notReady ? "Implement anyway" : "Implement"}
-          onConfirm={() => onRun({ action: "implement", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Implement #${dialog.card.id}`)}
+          onConfirm={() => run({ action: "implement", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Implement #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -385,7 +394,7 @@ export function ActionDialog({
           onClose={onClose}
           confirmLabel="Reject"
           disabled={!text.trim()}
-          onConfirm={() => onRun({ action: "reject", id: dialog.card.id, title: dialog.card.title, reason: text.trim() }, `Reject #${dialog.card.id}`)}
+          onConfirm={() => run({ action: "reject", id: dialog.card.id, title: dialog.card.title, reason: text.trim() }, `Reject #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -401,7 +410,7 @@ export function ActionDialog({
         <DialogButtons
           onClose={onClose}
           confirmLabel="Archive"
-          onConfirm={() => onRun({ action: "archive", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Archive #${dialog.card.id}`)}
+          onConfirm={() => run({ action: "archive", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Archive #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -425,7 +434,7 @@ export function ActionDialog({
           onClose={onClose}
           confirmLabel="Save edit"
           disabled={!text.trim()}
-          onConfirm={() => onRun({ action: "edit", id: dialog.card.id, title: dialog.card.title, notes: text.trim() }, `Edit #${dialog.card.id}`)}
+          onConfirm={() => run({ action: "edit", id: dialog.card.id, title: dialog.card.title, notes: text.trim() }, `Edit #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -442,7 +451,7 @@ export function ActionDialog({
         <DialogButtons
           onClose={onClose}
           confirmLabel="Refine"
-          onConfirm={() => onRun({ action: "refine", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Refine #${dialog.card.id}`)}
+          onConfirm={() => run({ action: "refine", id: dialog.card.id, title: dialog.card.title, notes: text.trim() || undefined }, `Refine #${dialog.card.id}`)}
         />
       </Dialog>
     );
@@ -463,7 +472,7 @@ export function ActionDialog({
         onClose={onClose}
         confirmLabel="Create task"
         disabled={!text.trim()}
-        onConfirm={() => onRun({ action: "create", description: text.trim() }, "Create task")}
+        onConfirm={() => run({ action: "create", description: text.trim() }, "Create task")}
       />
     </Dialog>
   );
@@ -483,10 +492,9 @@ function ResolveDialog({
   onClose: () => void;
   onRun: (req: AgentReq, label: string) => void;
 }) {
-  const [answers, setAnswers] = useState<string[]>(() => card.questions.map(() => ""));
-
-  const setAnswer = (i: number, value: string) =>
-    setAnswers((prev) => prev.map((a, j) => (j === i ? value : a)));
+  // Persist the per-question answers so an accidental close keeps them; reconciled
+  // to the current question count on reopen. Cleared once the session starts.
+  const [answers, setAnswer, clearDraft] = useDraftList(`resolve:${card.id}`, card.questions.length);
 
   return (
     <Dialog title={`Resolve #${card.id}`} onClose={onClose}>
@@ -515,7 +523,8 @@ function ResolveDialog({
       <DialogButtons
         onClose={onClose}
         confirmLabel="Resolve"
-        onConfirm={() =>
+        onConfirm={() => {
+          clearDraft();
           onRun(
             {
               action: "resolve",
@@ -524,8 +533,8 @@ function ResolveDialog({
               notes: composeAnswers(card.questions, answers),
             },
             `Resolve #${card.id}`,
-          )
-        }
+          );
+        }}
       />
     </Dialog>
   );
