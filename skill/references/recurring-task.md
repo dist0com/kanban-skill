@@ -87,7 +87,7 @@ Keep it plain — the question, the answer, and whether it can be automated next
 
 ## What not to do
 
-- Don't archive a recurring task, and don't add it to `archive.md`. It has no end state.
+- Don't archive a recurring task or record it as shipped behavior. It has no end state.
 - Don't mark a step `[script]` before the script exists.
 - Don't let run files pile up unread — their whole value is being folded back into
   `## Process` and then emptied.

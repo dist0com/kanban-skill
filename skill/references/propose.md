@@ -9,7 +9,17 @@ Read `docs/kanban/modules.md` and repair any line that
 disagrees with the repo (no map? build it per `references/module-map.md`).
 
 **Ask the user to pick one or more modules from the map.** If they leave it open, pick
-one yourself — the one where `memory.md` says users stumble most.
+one yourself — the one where memory says users stumble most.
+
+Once you have a focus module, its memory set lives at `docs/kanban/memory/<module>/` (keyed
+by its bolded name in `modules.md`) — the five files described in "The memory set" in
+`SKILL.md`. Read that path, not the whole board, so the notes you work from are that
+module's: `readme.md` for current status (and shipped behavior not yet documented),
+`goal.md` for its direction, `decisions.md` for settled answers you needn't re-open, and
+`redesign.md` / `rejected.md` to avoid wrong designs and re-proposals. To see what already
+shipped, read the module's **published docs** — shipped behavior is recorded there, not in
+memory. A module with no folder yet has no notes. With no focus module or no module map,
+read the umbrella set at `docs/kanban/` instead.
 
 ## 2. Walk it as a user
 
@@ -18,17 +28,23 @@ focus, step by step. At each step ask: what can't they see or find? what do they
 on, guess at, or redo by hand? Every stumble is a task idea.
 
 Then check the focus's written sources — the code, roadmap doc, user-facing docs
-(Configuration), `archive.md`, `todo/`, `rejected.md`, `memory.md` — to catch promised
-work and stop re-proposals.
+(Configuration, where shipped behavior is recorded), `todo/`, `rejected.md`, and the focus
+module's memory (from step 1, `readme.md` included) — to catch promised work and stop
+re-proposals.
 
 ## 3. Propose 3 tasks
 
-All inside the focus; none already on the board, in `archive.md`, or in `rejected.md`
-(unsure one is already done? run the check in `references/task-review.md`). Write each
+All inside the focus; none already on the board, already shipped (in the published docs or
+`readme.md`), or in `rejected.md` (unsure one is already done? run the check in
+`references/task-review.md`). Write each
 with the "Add a task" flow in `SKILL.md`.
 
 ## 4. Record
 
-Update `docs/kanban/memory.md` so the next loop skips re-reading: where users stumbled
-(keep the gap, drop the details), a review watermark per source, and this loop's focus
-so the next one rotates. Prune stale notes; split into `memory/<topic>.md` when long.
+Overwrite the focus module's `readme.md` (`docs/kanban/memory/<module>/readme.md`) with the
+current status so the next loop skips re-reading: where users stumbled (keep the gap, drop
+the details), a review watermark per source, and this loop's focus so the next one rotates.
+If the module has no folder yet, run `node .claude/skills/kanban/kanban.mjs memory-init
+<module>` first to create its set. For umbrella-wide work with no focus module, or a project
+with no module map, write the umbrella `readme.md` at `docs/kanban/readme.md` instead. Prune
+stale notes.

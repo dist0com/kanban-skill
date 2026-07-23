@@ -34,13 +34,17 @@ docs/kanban/
 │   ├── <track>/    one folder per track (see Configuration), one card per file
 │   └── recurring/  jobs on a cadence (see "Recurring task") — one card per file,
 │                   never archived
-├── archive.md      shipped work, by product area, plain language, no task ids
+│   the five-file memory set (see "The memory set") — the umbrella copy at the board root:
+├── readme.md       current status — watermarks, last focus, open gaps; refreshed each scan.
+│                   Also the holding pen for shipped user-facing behavior no published doc covers yet
+├── goal.md         the project's direction, in the user's words — user-owned
+├── decisions.md    settled answers to cards' open questions — the resolve flow appends here
 ├── rejected.md     ideas we said no to, by product area — one line each: the idea
 │                   and why. Rejecting is rare; focus this file on what to avoid
 ├── redesign.md     design mistakes, by product area — each entry: the mistake,
 │                   then the design we actually want
-├── memory.md       short notes from past scans, written from the user's
-│                   standpoint, so a new loop builds on them (or memory/*.md)
+├── memory/<module>/  a module's own copy of the same five-file set, keyed by its name in
+│                   modules.md, made lazily on the first write (see "The memory set")
 ├── modules.md      one line per module — install writes it, the propose flow
 │                   reads it to pick a focus area (see "The module map")
 ├── next-id         the next free task id — NEVER edit by hand; only the script
@@ -49,8 +53,10 @@ docs/kanban/
                     keeps it; you never touch it
 ```
 
-Before proposing, read `archive.md` and `rejected.md` so you don't re-suggest shipped
-or rejected work. Before writing or reviewing a card, read `redesign.md` so a new card
+Before proposing, read the published docs (your reference docs, see Configuration),
+`readme.md`, and `rejected.md` so you don't re-suggest shipped or rejected work — shipped
+behavior lives in the docs (with `readme.md` as the holding pen until a doc covers it), not
+in a separate archive. Before writing or reviewing a card, read `redesign.md` so a new card
 doesn't repeat a wrong plan.
 
 ## The script
@@ -58,23 +64,23 @@ doesn't repeat a wrong plan.
 `.claude/skills/kanban/kanban.mjs` is the **only** sanctioned way to scaffold the board,
 create, update, migrate, archive, or reject a task. It allocates ids, writes and rewrites a
 card's **frontmatter**, moves/removes task files, keeps the README index, and records the
-daily metric. Run it from the repo root with `node`:
+daily metric. Set `KB="node .claude/skills/kanban/kanban.mjs"` once and run every command from
+the repo root as `${KB} <command>`:
 
 ```
-node .claude/skills/kanban/kanban.mjs init [track...]       # scaffold docs/kanban/ (tracks default to feature bug research)
-node .claude/skills/kanban/kanban.mjs create [--count N]    # allocate N ids (default 1), prints them
-node .claude/skills/kanban/kanban.mjs create --title "..." --track <track> [--priority high|med|low] \
-     [--roi high|med|low] [--blocked-by 1,2] [--related 3] [--question "..."] [--slug ...]
-                                                            # scaffold ONE card: writes its frontmatter + a body
-                                                            # template + the README entry. Then fill only the body.
-node .claude/skills/kanban/kanban.mjs update <id> [--priority ..] [--roi ..] [--track ..] [--slug ..] \
-     [--blocked-by ..] [--related ..] [--question ..] [--clear-questions]
-                                                            # rewrite a card's frontmatter; --track moves it, --slug renames
-node .claude/skills/kanban/kanban.mjs archive <id>          # finish task <id>
-node .claude/skills/kanban/kanban.mjs reject  <id>          # reject task <id>
-node .claude/skills/kanban/kanban.mjs run     <id>          # record one run of recurring task <id> (card kept)
-node .claude/skills/kanban/kanban.mjs peek                  # current next-id, no bump
-node .claude/skills/kanban/kanban.mjs help                  # full usage
+${KB} init [track...]               # scaffold docs/kanban/ (tracks default to feature bug research)
+${KB} create [--count N]            # allocate N ids (default 1), prints them
+${KB} create --title ".." --track <track> [--priority high|med|low] [--roi high|med|low] \
+             [--blocked-by 1,2] [--related 3] [--question ".."] [--slug ..]
+                                    # scaffold ONE card: frontmatter + body template + README entry; then fill only the body
+${KB} update <id> [--priority ..] [--roi ..] [--track ..] [--slug ..] \
+             [--blocked-by ..] [--related ..] [--question ..] [--clear-questions]
+                                    # rewrite a card's frontmatter; --track moves it, --slug renames
+${KB} archive <id>                  # finish task <id>
+${KB} reject  <id>                  # reject task <id>
+${KB} run     <id>                  # record one run of recurring task <id> (card kept)
+${KB} peek                          # current next-id, no bump
+${KB} help                          # full usage
 ```
 
 The script validates every value — unknown track, bad priority/roi, invented `#id`, or a
@@ -97,22 +103,10 @@ planned yet. Full guide in `references/propose.md`.
 
 ## Add a task
 
-Add a task from an idea.
-Review the idea before writing, then review again after. Both passes use `references/task-review.md`.
-On a failure, ask the user a question about what it flagged, then decide from the answer
-whether to proceed or drop it. Never drop a task without asking a question first.
-
-1. **Review the idea first** — business necessity, feasibility, feature value,
-   duplication. Read `docs/kanban/redesign.md` and drop or fix any design it warns
-   against. Only proceed if it passes (or the user's answer says to).
-2. **Scaffold the card, then write its body.** Create the card and its frontmatter with
-   `create --title "..." --track <track>` plus any meta flags (see "The script") — this
-   writes the file, its meta, and the README entry. Then spawn a subagent with
-   `references/add-task.md` and the file path; it fills in only the **body** (summary,
-   scope, todos) with Write/Edit and leaves the frontmatter alone. Adding three tasks?
-   Run `create` three times (each returns its id) and spawn three subagents in parallel.
-3. **Review the written card** — plain language, todos split, unambiguous plan. Keep it
-   if it passes.
+Add a task from an idea: resolve the modules it touches and read their memory, review
+the idea, scaffold the card with the script, have a subagent write the body, review
+the written card, then refine it once. Never drop a task without asking the user a
+question first. Full guide in `references/add-task.md`.
 
 ## Review a task
 
@@ -137,7 +131,10 @@ questions first.
 When a card carries open `questions`, resolving them is the only way to move it
 forward. Research each one, decide it yourself when the evidence settles it, ask the
 user when it's a judgment call, write the answers into the card, and clear the list
-with the script. Full guide in `references/resolve.md`.
+with the script. Append each user-facing decision, in minimal plain words, to
+`decisions.md` — the board-root copy, plus the copy of any module the card names — so
+a later loop doesn't re-ask; internal details stay on the card. Full guide in
+`references/resolve.md`.
 
 ## Group task
 
@@ -152,7 +149,7 @@ todo/<id>-<short-slug>/
 ```
 
 The root takes one new id; each subtask takes its own id — allocate them together with
-`node .claude/skills/kanban/kanban.mjs create --count <N>` (root + subtasks). Wire them up
+`${KB} create --count <N>` (root + subtasks). Wire them up
 with the script's flags: each subtask is **Related** to the root, and **Blocked by**
 between subtasks that must run in order.
 
@@ -161,17 +158,25 @@ between subtasks that must run in order.
 One-shot tasks only — a recurring card is never finished this way; each run uses
 `run <id>` and keeps the card (see "Recurring task").
 
-Don't keep the full card — it just wastes tokens on future scans. Rewrite it down
-to a 1-2 line note and add it to `docs/kanban/archive.md` under the topic that fits
-— start a new topic heading if none fits. Say **what the user can now do**, in plain
-words. No task ids, file names, migrations, function names, or other code detail:
+Record what shipped where the record belongs — the published doc, not a separate archive:
 
-```
-## <topic>
-- <what the user can now do, 1-2 plain lines>
-```
+1. **Only user-facing behavior.** If the change is internal-only (nothing a user can see
+   or do), record nothing — don't keep an internal note.
+2. **A published doc covers it → the doc is the record.** The card already carries todos to
+   update the docs it touches (the "Document a change" flow); those todos write the doc.
+   Don't add a second doc-writing path here — just make sure those todos are done.
+3. **No published doc yet → hold it in `readme.md`.** Put the user-facing behavior in
+   `readme.md` as a holding pen, in plain words — **what the user can now do**, no task ids,
+   file names, migrations, function names, or other code detail. Drop that entry once a
+   published doc covers the behavior; a leftover copy or link is the second copy we avoid.
 
-Then run `node .claude/skills/kanban/kanban.mjs archive <id>` — it removes the card file
+The holding-pen entry goes in the board-root `readme.md`. If the card names a module in its
+`modules:` field, hold it in that module's copy (`docs/kanban/memory/<module>/readme.md`)
+instead — run `${KB} memory-init <module>` first so the set exists (names two? write both).
+A card with no module, or an umbrella-wide change, uses the board-root copy (see "The
+memory set").
+
+Then run `${KB} archive <id>` — it removes the card file
 (or the whole folder for a group root), strips its README entry, and records the completion.
 
 ## Reject an idea
@@ -185,7 +190,12 @@ fits. One bolded idea name, then one plain line on why we said no:
 - **<idea name>** — <why we said no, one line>.
 ```
 
-If the idea already had a card, run `node .claude/skills/kanban/kanban.mjs reject <id>` —
+Write it to the board-root `rejected.md`. If the idea's card names a module in its
+`modules:` field, also append the same line to that module's copy
+(`docs/kanban/memory/<module>/rejected.md`) — `${KB} memory-init <module>` first (see "The
+memory set").
+
+If the idea already had a card, run `${KB} reject <id>` —
 it removes the card file (or folder), strips its README entry, and records the rejection.
 
 ## Record a redesign
@@ -200,6 +210,11 @@ right, not what went wrong:
 ## <topic>
 - ❌ **<mistake>** → ✅ <what the design should be instead, one line>.
 ```
+
+Write it to the board-root `redesign.md`. If the corrected card names a module in its
+`modules:` field, also append the same entry to that module's copy
+(`docs/kanban/memory/<module>/redesign.md`) — `${KB} memory-init <module>` first (see "The
+memory set").
 
 ## The tracks
 
@@ -233,7 +248,7 @@ frontmatter, and carries two extra sections:
 **Finishing a run** (not the whole task):
 
 1. Run the job by following `## Process`.
-2. Record it: `node .claude/skills/kanban/kanban.mjs run <id>` — this adds +1 to
+2. Record it: `${KB} run <id>` — this adds +1 to
    `completed` and **keeps the card** (no archive, no README change). It refuses if the
    card isn't under `todo/recurring/`.
 3. **Self-improve.** Collect what happened this run and rewrite `## Process` so the next
@@ -266,10 +281,56 @@ pick a focus area. It stays true by one rule: whoever reads it and sees a line d
 with the repo fixes that line in the same run. To write it from scratch or rebuild it,
 follow `references/module-map.md`.
 
+## The memory set
+
+The project's memory is a **fixed set of five files**, held at two levels. Every memory path
+— the board root and each module's own path — holds the same five:
+
+- **`readme.md`** — current status: where this stands now. Watermarks (when each source was
+  last reviewed), the last focus, the open gaps. Also the **holding pen** for shipped
+  user-facing behavior no published doc covers yet (see "Finish a task"). The agent
+  overwrites it during a scan.
+- **`goal.md`** — the direction, in the user's words. One short statement. The user owns it;
+  the agent seeds a template but never invents the goal.
+- **`decisions.md`** — settled answers to cards' open questions. The resolve flow appends
+  the user-facing ones, in minimal plain words, once cleared, so a later loop doesn't
+  re-ask.
+- **`redesign.md`** — design mistakes to avoid.
+- **`rejected.md`** — ideas we turned down, and why.
+
+Shipped work is **not** in the set: the published doc is its record (see "Finish a task"),
+with `readme.md` holding anything not yet documented.
+
+**Two levels, side by side.**
+
+- **Umbrella (board root, `docs/kanban/`).** The umbrella copy covers work that spans the
+  whole project. `init` writes all five here when it scaffolds the board.
+- **Per module (`docs/kanban/memory/<module>/`).** Each module named in the map (keyed by
+  its bolded name in `modules.md`) gets its own copy of the same five, so one part's notes
+  don't bury the rest. Module copies sit **beside** the umbrella copy — they never replace
+  it.
+
+**Lazy creation.** A module with no notes yet has no folder. The whole set appears at once
+the first time something writes to that module's memory — run
+`${KB} memory-init <module>` to scaffold it (idempotent), then write. Never pre-create the
+set for every listed module.
+
+**Which copy a write lands in.** The card's `modules:` field decides: a card that names a
+module writes that module's copy (both, if it names two); a card with no module, or an
+umbrella-wide change, writes the board-root copy. The flows that write memory —
+"Finish a task" (holds undocumented behavior in `readme.md`), "Reject an idea"
+(`rejected.md`), "Record a redesign" (`redesign.md`), "Resolve open questions"
+(`decisions.md`), and propose (`readme.md`) — all follow this rule.
+
+**Propose reads the focus.** When propose picks a focus module, it reads that module's set,
+not the whole board — so working on one part shows that part's notes. With no focus module
+or no module map, it reads the umbrella set.
+
 ## Auto-pruning
 
-To compress `memory.md`, `archive.md`, `rejected.md` and `redesign.md` down to
-planning-useful summaries, follow `references/prune-memory.md`.
+To compress the memory set — `readme.md`, `decisions.md`, `rejected.md` and
+`redesign.md`, at the board root and in each module copy — down to planning-useful
+summaries, follow `references/prune-memory.md`.
 
 ## Document a change
 

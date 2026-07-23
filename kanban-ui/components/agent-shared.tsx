@@ -36,6 +36,7 @@ export interface AgentReq {
   reason?: string;
   description?: string;
   title?: string;
+  andImplement?: boolean;
 }
 
 export type DialogState =
@@ -496,12 +497,30 @@ function ResolveDialog({
   // to the current question count on reopen. Cleared once the session starts.
   const [answers, setAnswer, clearDraft] = useDraftList(`resolve:${card.id}`, card.questions.length);
 
+  // Both footer buttons share this — resolve alone, or resolve then keep going into
+  // implement in the same session. The prompt (see buildPrompt) tells the agent to
+  // only implement when nothing genuine is left for the user to decide.
+  const submit = (andImplement: boolean) => {
+    clearDraft();
+    onRun(
+      {
+        action: "resolve",
+        id: card.id,
+        title: card.title,
+        notes: composeAnswers(card.questions, answers),
+        andImplement: andImplement || undefined,
+      },
+      `${andImplement ? "Resolve & implement" : "Resolve"} #${card.id}`,
+    );
+  };
+
   return (
     <Dialog title={`Resolve #${card.id}`} onClose={onClose}>
       <p className={INTRO}>
         Answer any open questions you already know. The agent researches the rest and decides what
         the evidence settles, writing every answer into the card. Real judgment calls stay open for
-        you.
+        you. <strong>Resolve &amp; implement</strong> keeps the same session going and builds the
+        task — but only if nothing genuine is left for you to decide.
       </p>
       <div className="flex flex-col gap-3.5">
         {card.questions.map((q, i) => (
@@ -520,22 +539,11 @@ function ResolveDialog({
           </div>
         ))}
       </div>
-      <DialogButtons
-        onClose={onClose}
-        confirmLabel="Resolve"
-        onConfirm={() => {
-          clearDraft();
-          onRun(
-            {
-              action: "resolve",
-              id: card.id,
-              title: card.title,
-              notes: composeAnswers(card.questions, answers),
-            },
-            `Resolve #${card.id}`,
-          );
-        }}
-      />
+      <div className="mt-4 flex flex-wrap justify-end gap-2.5">
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="ghost" onClick={() => submit(false)}>Resolve</Button>
+        <Button onClick={() => submit(true)}>Resolve &amp; implement</Button>
+      </div>
     </Dialog>
   );
 }

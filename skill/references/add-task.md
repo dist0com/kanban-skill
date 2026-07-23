@@ -1,20 +1,44 @@
-# Write a card's body
+# Add a task
 
-The script has already scaffolded the card you were given — its frontmatter, a body
-template, and its README entry exist. Your job is the **body** only: the summary line,
-`## Scope`, and `## Todo`. Replace the template placeholders with Write/Edit.
+Turn an idea into a card on the board. Review the idea before writing and the written
+card after — both passes use `references/task-review.md`. On a failure, ask the user
+about what it flagged, then decide from the answer whether to proceed or drop it.
+Never drop a task without asking first.
 
-**Never touch the frontmatter.** The script owns it — a wrong meta field is fixed with
-`create`/`update` (see "The script" in `SKILL.md`), not with an editor.
+1. **Resolve the modules.** If the module is not explicitly given, 
+   read `docs/kanban/modules.md` and decide which modules the idea touches.
+   Then read each one's whole memory set at `docs/kanban/memory/<module>/`. A
+   module with no folder yet has no notes. Read the umbrella
+   set at `docs/kanban/` instead.
+2. **Review the idea** — business necessity, feasibility, feature value, duplication.
+   Judge it against the memory you just read: drop or fix any design `redesign.md`
+   warns against, don't re-add what `rejected.md` turned down or what already shipped,
+   respect settled `decisions.md`. Check "Don't split off near-duplicates" below.
+3. **Scaffold, then write the body.** `create --title "..." --track <track>` plus any
+   meta flags (see "The script" in `SKILL.md`) writes the file, its frontmatter, and
+   the README entry. Then spawn a subagent with this file and the card's path; it
+   follows "Write the card's body" below. Adding three? Run `create` three times and
+   spawn three subagents in parallel.
+4. **Review the written card** — plain language, todos split, unambiguous plan.
+5. **Refine it once** (`references/refine.md`) — a fresh card is a raw idea; the add
+   isn't done until one refine pushes it a stage forward. Added several? Refine each.
 
-Before writing, read `docs/kanban/redesign.md` and follow the design it tells you to
-use for this area — don't repeat a mistake it warns against.
+## Don't split off near-duplicates
 
-## Card shape
+If the new card is mostly a tweak, reframe, or extra detail on an upstream card that
+**isn't built yet**, update the upstream card instead. A card earns its own id only
+for genuinely separate work — a different file, system, or deliverable.
 
-A rough shape, not a strict form. Keep lines short and plain — a non-native reader
-skimming should get each line in one pass. Add any section that helps; drop any that
-doesn't.
+## Write the card's body
+
+For the body-writing subagent. The card is already scaffolded; replace the template
+placeholders with Write/Edit — the summary line, `## Scope`, and `## Todo` only.
+**Never touch the frontmatter** — the script owns it; a wrong meta field is fixed with
+`create`/`update`, not an editor.
+
+The shape is rough, not a strict form. Keep lines short and plain — a non-native
+reader skimming should get each line in one pass. Add any section that helps; drop any
+that doesn't.
 
 ```
 ---
@@ -39,38 +63,23 @@ questions: []              # questions a human must decide; [] for none
 
 - **title** lives in the frontmatter — one source of truth, so no `#` H1 in the body.
 - **blocked_by / related / questions** are set through the script's flags (see
-  "Relationships"); they belong to whoever runs `create`/`update`, not to the body.
+  "Relationships"), by whoever runs `create`/`update` — not in the body.
+- **Todo** — the scope split into single-line steps you can check off, in order.
+- **Pushback** — add a `## Pushback` section only if something feels off: too much
+  work for the value, not worth doing now, or a risk to users.
 
-**Todo** — split the scope into steps you can check off, in the order you'd do them.
-Each one is a single line.
-
-**Pushback** — add a `## Pushback` section only if something feels off: too much work
-for the value, not worth doing now, or a risk to users. Skip it otherwise.
-
-Add other sections freely when they help — open questions, links, examples, whatever.
 This isn't a full plan, just enough to start.
-
-## Don't split off near-duplicates
-
-For whoever decides a card should exist, not the body writer. Before adding a card,
-check it against the task it builds on. If the new card is mostly a tweak, reframe, or
-extra detail on an upstream card that **isn't built yet**, don't make a new card —
-update the upstream card instead. A card earns its own id only when it's genuinely
-separate work (a different file, system, or deliverable), not a minor modification
-layered on top of another open task.
 
 ## Document a change
 
 If the card ships something a user can see, it carries todos to update the docs it
-touches, so the change isn't hidden after it ships. Follow `references/document-feature.md`.
+touches (`references/document-feature.md`), so the change isn't hidden after it ships.
 
 ## Relationships
 
-Tasks connect to each other. Every card lists two kinds of connected tasks in its
-frontmatter, by id — set with `create`/`update`'s `--blocked-by` and `--related` flags:
+Two frontmatter lists connect cards by id, set with `--blocked-by` and `--related`:
 
-- **Blocked by** — tasks that must finish first. This one can't start, or can't be done
-  right, until they're done. A card with an open blocker isn't ready to pick; say what
-  blocks it when proposing what's next.
-- **Related** — tasks about the same feature, page, or data. They don't block this one,
-  but keep them in sync so they don't drift apart or repeat each other.
+- **Blocked by** — tasks that must finish first; this one can't start, or can't be
+  done right, until they're done. A card with an open blocker isn't ready to pick.
+- **Related** — tasks about the same feature, page, or data. They don't block this
+  one, but keep them in sync so they don't drift apart or repeat each other.

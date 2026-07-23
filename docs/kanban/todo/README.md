@@ -13,18 +13,16 @@ _(none)_
 
 - [#22 Open-questions notification center in the header](features/22-open-questions-notification-center-in-the-header.md)
 - [#25 Show on the board which cards you can't start yet](features/25-show-on-the-board-which-cards-you-can-t-start-yet.md)
-- [#26 A ready-only focus toggle for the board](features/26-a-ready-only-focus-toggle-for-the-board.md)
 - [#27 Auto-refresh every open view when a background run finishes](features/27-auto-refresh-every-open-view-when-a-background-run-finishes.md)
 - [#28 Continue a run's conversation instead of copying its id](features/28-continue-a-run-s-conversation-instead-of-copying-its-id.md)
+- [#38 Fold propose into the create-task dialog, with a module picker](features/38-fold-propose-into-the-create-task-dialog-with-a-module-picke.md)
+- [#39 Show a card's modules in the local UI](features/39-show-a-card-s-modules-in-the-local-ui.md)
 
 ## skill
 
 - [#6 Keep the board's config in the project, not in SKILL.md](skill/06-project-local-config.md)
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
 - [#31 Advanced memory: a structured memory layer for planning](31-advanced-memory/root.md)
-  - [#34 Tag each task with the modules it touches](31-advanced-memory/skill/34-tag-each-task-with-the-modules-it-touches.md)
-  - [#35 Give each module its own memory path](31-advanced-memory/skill/35-per-module-memory-path.md)
-  - [#36 Fill each module's memory with a fixed set of files](31-advanced-memory/skill/36-module-memory-files.md)
 
 ## docs
 

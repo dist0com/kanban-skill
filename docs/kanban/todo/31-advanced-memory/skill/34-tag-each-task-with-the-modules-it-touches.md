@@ -4,8 +4,8 @@ track: skill
 priority: med
 roi: high
 status: todo
-blocked_by: [33]
-related: [31, 33]
+blocked_by: []
+related: [31, 39]
 questions: []
 ---
 
@@ -19,6 +19,10 @@ that is not listed, the script rejects the name and the map gains a line. A new
 module shows up the moment someone works on it. (Deletions and renames are the
 other half — propose's cross-check, in #33.)
 
+This card stays on the skill side: the `modules` field and the `kanban.mjs` work
+that writes and validates it. Showing the field in the local UI (the board card
+and the card page) is its own card, #39.
+
 ## Scope
 - Add `modules: []` to a card's frontmatter. Optional, and a list — one task can
   touch two modules, and a distribution task may touch none.
@@ -31,7 +35,9 @@ other half — propose's cross-check, in #33.)
   the whole refresh mechanism, so it has to teach.
 - Work when there is no map yet. Every install that already exists has none, so
   a missing `modules.md` means the field is skipped, not an error.
-- Backfill the cards on the board today.
+- Migrate the cards on the board today with a simple script. Don't guess which
+  module each card touches — just add `modules: []` to every card that lacks the
+  field. People tag them later as they work each card.
 - Update the "Add a task" step in SKILL.md, where the main agent runs `create`.
   `references/add-task.md` does not change — that subagent only fills the body.
 - Make `references/propose.md` list the cards already tagged with the focus
@@ -42,6 +48,6 @@ other half — propose's cross-check, in #33.)
 - [ ] Add `--modules` to create and update, validated against modules.md
 - [ ] Write the unknown-name error so it lists known names and says how to add one
 - [ ] Skip the field cleanly when modules.md does not exist
-- [ ] Backfill modules on the cards on the board
+- [ ] Write a simple migration script that adds `modules: []` to every card missing it
 - [ ] Make propose list the cards tagged with the focus module
 - [ ] Document the field in SKILL.md's "Add a task" step

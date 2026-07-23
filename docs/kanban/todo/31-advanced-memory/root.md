@@ -30,23 +30,31 @@ what the memory should hold.
 ## Decisions
 
 - **What the memory holds beyond the module map.** Keep project goals, and nothing
-  new past that. Each memory path gets a fixed six-file set (#36): a current-status
+  new past that. Each memory path gets a fixed five-file set (#36, #37): a current-status
   note (`readme.md`), a user-owned direction note (`goal.md` — the goals), settled
-  question answers (`decisions.md`), and the `redesign.md` / `archive.md` /
-  `rejected.md` files the board already keeps. Target users and code conventions are
+  question answers (`decisions.md`), and the `redesign.md` / `rejected.md` files the
+  board already keeps. Target users and code conventions are
   out — they don't move the choice of next task enough to be worth maintaining.
-  "What shipped recently" needs no new fact; `archive.md` already covers it.
+  "What shipped recently" needs no new fact; the published doc records it (with
+  `readme.md` as the holding pen until a doc exists) — see #37.
 - **One shared memory or split.** Split, one memory per module, at
-  `docs/kanban/memory/<module>/` (#35), each holding the same six-file set (#36).
+  `docs/kanban/memory/<module>/` (#35), each holding the same five-file set (#36, #37).
   Not one flat `memory.md`, and not one-file-per-topic — the module a card names
   (#34) picks which copy a write lands in, so a module's notes stay with that module.
   Umbrella-wide work reads the board-root copy of the set. The module map is not
   memory: it stays flat at `docs/kanban/modules.md`, since the script parses it and
   the prune flow would mangle it (#33).
+- **How shipped work gets recorded — stop maintaining `archive.md`.** Recording what
+  shipped is not the memory layer's job; the published doc is. Point the finish and
+  prune flows at the doc (or `readme.md` until a doc exists) instead of `archive.md`.
+  Done (#37): `archive.md` is gone from the set and the finish/prune flows now record
+  to the doc / `readme.md`.
 
 ## Todo
 - [ ] Explore what the memory layer should hold #32
 - [x] Map the project's modules at setup #33
 - [ ] Tag each task with the modules it touches #34
-- [ ] Give each module its own memory path #35
-- [ ] Fill each module's memory with a fixed set of files #36
+- [x] Give each module its own memory path #35
+- [x] Fill each module's memory with a fixed set of files #36
+- [x] Stop maintaining `archive.md`: point the finish and prune flows at the published
+  doc / `readme.md` #37

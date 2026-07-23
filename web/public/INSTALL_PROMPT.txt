@@ -41,8 +41,9 @@ genuinely can't infer a value — otherwise pick sensible defaults and tell me w
        node .claude/skills/kanban/kanban.mjs init <track1> <track2> ...
 
    This creates `docs/kanban/` with `todo/README.md`, a `todo/blockers/` folder and one
-   folder per track, `next-id` set to `1`, and empty `archive.md`, `rejected.md`,
-   `redesign.md`, `memory.md`. It's safe to re-run — it does nothing if a board exists.
+   folder per track, `next-id` set to `1`, and the umbrella memory set — `readme.md`,
+   `goal.md`, `decisions.md`, `redesign.md`, `rejected.md`. It's safe to
+   re-run — it does nothing if a board exists.
 
 7. Write the module map. Follow `.claude/skills/kanban/references/module-map.md` to write
    `docs/kanban/modules.md` — a plain list of what parts this project is made of. Reuse the

@@ -1,7 +1,8 @@
-# Memory
+# Status
 
-Short notes carried to the next planning loop, from the user's standpoint. Watermarks say
-when a source was last reviewed, so the next loop knows what changed.
+Where the project stands now, refreshed each planning scan: watermarks (when each source
+was last reviewed), the last focus, and the open gaps between the goal and today. The agent
+overwrites this during a scan.
 
 ## Watermarks
 
@@ -15,12 +16,6 @@ when a source was last reviewed, so the next loop knows what changed.
 - 2026-07-21: local board UI, "the board as a pick-your-next-task surface". Proposed
   #24 (sort each column by pick-order not id), #25 (show which cards you can't start
   yet), #26 (ready-only focus toggle). Next loop: rotate off the local UI.
-
-## Product direction
-
-- The skill is a reusable, project-agnostic port of dist0's kanban skill. Configuration
-  makes it fit any repo; presets carry the opinionated extras.
-- Stay file-based and git-diffable. No database, no server.
 
 ## Open gaps
 

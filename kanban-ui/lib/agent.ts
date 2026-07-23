@@ -77,6 +77,7 @@ export interface AgentRequest {
   notes?: string; // implement, edit, refine, resolve, archive
   reason?: string; // reject
   description?: string; // create
+  andImplement?: boolean; // resolve: keep going and implement once the questions settle
 }
 
 export function buildPrompt(req: AgentRequest): string {
@@ -106,7 +107,8 @@ export function buildPrompt(req: AgentRequest): string {
     case "edit":
       return [
         `/kanban. Revise task ${req.id} ${named}: "${req.notes || ""}".`,
-        `Only revise the card — don't implement it, and don't move, archive, or reject it.`,
+        `Only revise the card — don't implement it, and don't archive, or reject it.`,
+        `You can create new subtasks if it's a group task and the intent is to do so.`,
       ].join(" ");
     case "create":
       return [
@@ -124,6 +126,9 @@ export function buildPrompt(req: AgentRequest): string {
     case "resolve":
       return [
         `/kanban. Resolve the open questions on task ${req.id} ${named} following \`references/resolve.md\`.`,
+        req.andImplement
+          ? `Then, if resolving settles every question and nothing genuine is left for me to decide, go straight on to implement the task following the skill's implement flow — one continuous session. But if any real judgment call stays open, stop there and report it: don't implement on a guess.`
+          : "",
         req.notes ? `Extra notes: ${req.notes}` : "",
       ]
         .filter(Boolean)

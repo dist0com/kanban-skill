@@ -2,7 +2,8 @@
 // Kanban board bookkeeping. The ONLY sanctioned writer of docs/kanban/next-id.
 //
 // Handles the id-touching moves so the board stays consistent:
-//   init    — scaffold a fresh docs/kanban/ board (folders + starter files)
+//   init    — scaffold a fresh docs/kanban/ board (folders + the umbrella memory set)
+//   memory-init — lazily scaffold a module's memory path with the five-file set
 //   create  — allocate task id(s); with --title, also write the card's frontmatter + index it
 //   update  — rewrite a card's frontmatter (priority/roi/links/questions, move track, rename)
 //   migrate — convert old bold-header cards to the frontmatter meta format
@@ -15,6 +16,7 @@
 //
 // Usage:
 //   node kanban.mjs init [track...]                     scaffold docs/kanban/ (default tracks: feature bug research)
+//   node kanban.mjs memory-init <module>                lazily scaffold memory/<module>/ with the five-file set
 //   node kanban.mjs create [--count N]                  allocate N ids (default 1), print them
 //   node kanban.mjs create --title T --track K [opts]   scaffold one card (frontmatter + body template + index)
 //   node kanban.mjs update <id> [opts]                  rewrite a card's frontmatter / move / rename
@@ -492,28 +494,40 @@ function repointReadmeLink(id, oldRel, newRel, title) {
 // e.g. `init growth validation building`. Keep in step with the SKILL.md defaults.
 const DEFAULT_TRACKS = ['feature', 'bug', 'research']
 
-// Starter files. Each is a short header that tells the next reader what the file is for;
-// the board fills in the rest over time. Kept in plain language to match the skill's style.
-const STARTERS = {
-  'archive.md': `# Archive
+// The memory file set — the same five files fill a memory path at either level: the board
+// root (the umbrella memory, covering the whole project) and each module's own path at
+// `memory/<module>/`. Each starter is a short header that tells the next reader what the
+// file is for; the flows fill in the rest over time. Plain language, to match the skill.
+const MEMORY_SET = {
+  'readme.md': `# Status
 
-Shipped work, grouped by topic, in plain language. No task ids. Read before proposing so
-you don't re-suggest something already done.
+Where this stands now, refreshed each planning scan: watermarks (when each source was last
+reviewed), the last focus, and the open gaps between the goal and today. The agent
+overwrites this during a scan.
+
+_(not written yet — the next scan fills it in.)_
 `,
-  'rejected.md': `# Rejected
+  'goal.md': `# Goal
 
-Ideas we turned down, grouped by topic. One line each: the idea, and why we said no. Read
-before proposing so you don't re-suggest them.
+The direction, in the user's own words — where this is headed. One short statement. The
+user owns this file; the agent seeds it but does not invent the goal.
+
+_(not filled in yet — the user writes this.)_
+`,
+  'decisions.md': `# Decisions
+
+Settled answers to cards' open questions — the question, then the answer, once resolved.
+The resolve flow appends here. Read before proposing so you don't re-ask a settled call.
 `,
   'redesign.md': `# Redesign
 
 Design mistakes to avoid when writing a card, grouped by topic. One entry each: the
 mistake, then the design we actually want. Read before writing or reviewing a card.
 `,
-  'memory.md': `# Memory
+  'rejected.md': `# Rejected
 
-Short notes carried to the next planning loop, from the user's standpoint. Watermarks say
-when a source was last reviewed, so the next loop knows what changed.
+Ideas we turned down, grouped by topic. One line each: the idea, and why we said no. Read
+before proposing so you don't re-suggest them.
 `,
 }
 
@@ -544,13 +558,39 @@ function cmdInit(args) {
   fs.mkdirSync(path.join(TODO, 'blockers'), { recursive: true })
   for (const t of tracks) fs.mkdirSync(path.join(TODO, t), { recursive: true })
   fs.writeFileSync(README, boardReadme(tracks))
-  for (const [name, body] of Object.entries(STARTERS)) {
+  for (const [name, body] of Object.entries(MEMORY_SET)) {
     fs.writeFileSync(path.join(KANBAN, name), body)
   }
   writeNextId(1)
   console.log(`initialised board at ${rel(KANBAN)}/`)
   console.log(`  tracks: ${tracks.join(', ')}`)
   console.log('  next: fill the Configuration in config.md, then `create` your first task')
+}
+
+// Lazily scaffold a module's memory path with the five-file set. A module has no folder
+// until its first write; the writing flow (propose, reject, redesign, resolve)
+// runs this first, then writes into the file it needs. Idempotent: creates only what's
+// missing, so it's safe to call before every write. Keyed by the module's bolded name in
+// modules.md — passed verbatim as the folder name.
+function cmdMemoryInit(module) {
+  if (!module) die('memory-init needs a module name (its bolded name in modules.md)')
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(module)) {
+    die(`bad module name "${module}" — use letters, digits, and dashes (a folder name)`)
+  }
+  const dir = path.join(KANBAN, 'memory', module)
+  const existed = fs.existsSync(dir)
+  fs.mkdirSync(dir, { recursive: true })
+  const made = []
+  for (const [name, body] of Object.entries(MEMORY_SET)) {
+    const file = path.join(dir, name)
+    if (!fs.existsSync(file)) {
+      fs.writeFileSync(file, body)
+      made.push(name)
+    }
+  }
+  if (!existed) console.log(`created memory path ${rel(dir)}/ with the five-file set`)
+  else if (made.length) console.log(`filled in missing files in ${rel(dir)}/: ${made.join(', ')}`)
+  else console.log(`${rel(dir)}/ already has the full set — nothing to do`)
 }
 
 // ---- commands --------------------------------------------------------------
@@ -961,6 +1001,8 @@ function main() {
   switch (cmd) {
     case 'init':
       return cmdInit(rest)
+    case 'memory-init':
+      return cmdMemoryInit(rest[0])
     case 'create':
       return cmdCreate(rest)
     case 'update':
@@ -996,14 +1038,17 @@ function main() {
   }
 }
 
-const COMMANDS = ['init', 'create', 'update', 'migrate', 'archive', 'reject', 'run', 'peek', 'version', 'metrics', 'help']
+const COMMANDS = ['init', 'memory-init', 'create', 'update', 'migrate', 'archive', 'reject', 'run', 'peek', 'version', 'metrics', 'help']
 
 const HELP = `kanban — the only sanctioned writer of docs/kanban/next-id.
 
 Usage: node ${rel(SELF)} <command> [args]
 
-  init [track...]      scaffold docs/kanban/ (folders + starter files); tracks default to
-                       feature bug research. Does nothing if a board already exists.
+  init [track...]      scaffold docs/kanban/ (folders + the umbrella memory set); tracks
+                       default to feature bug research. Does nothing if a board exists.
+  memory-init <module> lazily scaffold docs/kanban/memory/<module>/ with the five-file set
+                       (readme, goal, decisions, redesign, rejected). Idempotent —
+                       run it before the first write to a module's memory.
   create [--count N]   allocate N task ids (default 1), advance next-id, print them
   create --title T --track K [opts]
                        scaffold ONE card: write its frontmatter + a body template, index it.

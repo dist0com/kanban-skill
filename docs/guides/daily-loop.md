@@ -6,9 +6,10 @@ Once the board exists, you drive it in plain language. Here's the rhythm.
 
 Ask **"what's next?"**. The skill:
 
-1. Reads the board, `archive.md`, and `rejected.md` so it won't repeat work.
+1. Reads the board, your published docs (where shipped work is recorded), `readme.md`, and
+   `rejected.md` so it won't repeat work.
 2. Scans a few of your planning sources that changed since the last loop (it tracks a
-   watermark per source in `memory.md`).
+   watermark per source in `readme.md`).
 3. Proposes **three new tasks** from real gaps — not a pick from the existing pile.
 
 You approve, tweak, or drop each. Approved ones become cards.
@@ -42,9 +43,10 @@ archives finished ones and flags the rest.
 
 ## Finish a task
 
-Say **"#4 is done"**. The skill compresses the card to a one-line note in `archive.md`
-(what the user can now do, in plain words — no ids or code detail), then runs
-`kanban.mjs archive 4` to remove the card and record the metric.
+Say **"#4 is done"**. The skill records the user-facing behavior where it belongs — the
+published doc the change touched (via the card's doc todos), or `readme.md` as a holding pen
+until a doc covers it (what the user can now do, in plain words — no ids or code detail) —
+then runs `kanban.mjs archive 4` to remove the card and record the metric.
 
 ```bash
 node .claude/skills/kanban/kanban.mjs archive 4
@@ -57,9 +59,10 @@ Say **"reject #4"** (rare). The skill adds a one-line "why not" to `rejected.md`
 
 ## Keep it lean
 
-Over time `memory.md`, `archive.md`, `rejected.md`, and `redesign.md` grow. Ask the skill
-to **prune** them — it compresses each to planning-useful summaries grouped by topic, so
-scans stay cheap. The board itself stays small because finished work is a note, not a card.
+Over time the memory set — `readme.md`, `decisions.md`, `rejected.md`, and
+`redesign.md` — grows. Ask the skill to **prune** it — it compresses each to
+planning-useful summaries grouped by topic, so scans stay cheap. The board itself stays
+small because finished work is a note, not a card.
 
 ## The commands, for reference
 
