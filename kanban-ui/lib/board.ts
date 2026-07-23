@@ -46,6 +46,7 @@ function buildCard(id: number, file: string, relFromTodo: string): Card | null {
     blocked_by: meta.blocked_by,
     related: meta.related,
     questions: meta.questions,
+    modules: meta.modules,
     body: body.replace(/^\n+/, "").replace(/\s+$/, ""),
     todos: countTodos(body),
   };

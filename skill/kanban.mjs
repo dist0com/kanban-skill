@@ -46,6 +46,7 @@ const TODO = path.join(KANBAN, 'todo')
 const NEXT_ID = path.join(KANBAN, 'next-id')
 const README = path.join(TODO, 'README.md')
 const METRICS = path.join(KANBAN, 'metrics.csv')
+const MODULES_MD = path.join(KANBAN, 'modules.md')
 
 function die(msg) {
   console.error(`kanban: ${msg}`)
@@ -311,6 +312,50 @@ function validTrack(track) {
   }
 }
 
+// The module map (docs/kanban/modules.md) lists the project's parts, one per line,
+// each led by its **bolded name**. Parse just that bolded name at the front of a line —
+// nothing else on the line. Returns null when there's no map yet (a pre-map install), so
+// callers can skip the field instead of failing.
+function moduleNames() {
+  if (!fs.existsSync(MODULES_MD)) return null
+  const names = []
+  for (const line of fs.readFileSync(MODULES_MD, 'utf8').split('\n')) {
+    const m = line.match(/^\s*[-*]\s+\*\*([^*]+)\*\*/)
+    if (m) names.push(m[1].trim())
+  }
+  return names
+}
+
+// Split a --modules value (repeatable and/or comma-separated) into a clean name list.
+function parseModuleList(raw) {
+  return (Array.isArray(raw) ? raw : [raw])
+    .flatMap((s) => String(s).split(','))
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+// Validate tags against the module map, the same way --track checks the track folders.
+// No map yet → the field is skipped (returns []), not an error, so a pre-map install still
+// works. An unknown name is a hard error whose message lists the known names and says how
+// to add one — that message is the whole refresh path, so a new module gets on the map the
+// moment someone tags a card with it.
+function validModules(mods) {
+  const known = moduleNames()
+  if (known === null) {
+    if (mods.length) warn(`no ${rel(MODULES_MD)} yet — skipping --modules ${mods.join(', ')}.`)
+    return []
+  }
+  const unknown = mods.filter((mod) => !known.includes(mod))
+  if (unknown.length) {
+    die(
+      `unknown module(s): ${unknown.join(', ')}. known modules: ${known.join(', ') || '(none)'}. ` +
+        `if this really is a new part of the project, add a line to ${rel(MODULES_MD)} first ` +
+        `(\`- **<name>** — <what it is>.\`), then tag the card — that line is how the map grows.`,
+    )
+  }
+  return mods
+}
+
 // Ids must be plain numbers already allocated (< ceiling). Rejects invented ids
 // like #999 that were never handed out.
 function parseIdList(raw, name, ceiling) {
@@ -349,6 +394,7 @@ function serializeFrontmatter(m) {
   out.push(`status: ${STATUSES.includes(m.status) ? m.status : 'todo'}`)
   out.push(`blocked_by: [${(m.blocked_by || []).join(', ')}]`)
   out.push(`related: [${(m.related || []).join(', ')}]`)
+  out.push(`modules: [${(m.modules || []).join(', ')}]`)
   if (!m.questions || m.questions.length === 0) out.push('questions: []')
   else {
     out.push('questions:')
@@ -411,6 +457,8 @@ function parseFrontmatter(text) {
     }
   }
   if (!Array.isArray(meta.questions)) meta.questions = meta.questions ? [meta.questions] : []
+  // modules is an optional string list; a card written before this field parses as [].
+  if (!Array.isArray(meta.modules)) meta.modules = []
   return { meta, body: lines.slice(i + 1).join('\n') }
 }
 
@@ -595,7 +643,7 @@ function cmdMemoryInit(module) {
 
 // ---- commands --------------------------------------------------------------
 
-const CREATE_FLAGS = ['title', 'track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'slug', 'count', 'no-body']
+const CREATE_FLAGS = ['title', 'track', 'priority', 'roi', 'blocked-by', 'related', 'modules', 'question', 'slug', 'count', 'no-body']
 
 // Two modes:
 //   bare      `create [--count N]`  → allocate ids and print them (group-task setup).
@@ -607,7 +655,7 @@ function cmdCreate(args) {
   if (positional.length) die(`create takes options, not positional args (got "${positional.join(' ')}")`)
 
   if (flags.title === undefined) {
-    for (const bad of ['track', 'priority', 'roi', 'blocked-by', 'related', 'question', 'slug', 'no-body']) {
+    for (const bad of ['track', 'priority', 'roi', 'blocked-by', 'related', 'modules', 'question', 'slug', 'no-body']) {
       if (flags[bad] !== undefined) die(`--${bad} needs --title (that's card mode). Without --title, create only allocates ids.`)
     }
     const count = flags.count !== undefined ? Number(flags.count) : 1
@@ -635,6 +683,7 @@ function cmdCreate(args) {
   const start = readNextId()
   const blocked_by = flags['blocked-by'] !== undefined ? parseIdList(flags['blocked-by'], 'blocked-by', start) : []
   const related = flags.related !== undefined ? parseIdList(flags.related, 'related', start) : []
+  const modules = flags.modules !== undefined ? validModules(parseModuleList(flags.modules)) : []
   const questions = flags.question !== undefined ? (Array.isArray(flags.question) ? flags.question : [flags.question]).map(String) : []
   const slug = slugify(flags.slug !== undefined ? flags.slug : title)
   const fileRel = path.join(track, `${start}-${slug}.md`)
@@ -644,7 +693,7 @@ function cmdCreate(args) {
   // validation passed → allocate + write
   writeNextId(start + 1)
   bumpMetric('created')
-  const meta = { title, track, priority, roi, status: 'todo', blocked_by, related, questions }
+  const meta = { title, track, priority, roi, status: 'todo', blocked_by, related, modules, questions }
   const body = flags['no-body'] ? '' : defaultBody()
   fs.writeFileSync(file, serializeFrontmatter(meta) + '\n\n' + body)
   const indexed = addReadmeRef(track, start, title, fileRel)
@@ -654,7 +703,7 @@ function cmdCreate(args) {
   reconcileBoard()
 }
 
-const UPDATE_FLAGS = ['title', 'track', 'priority', 'roi', 'status', 'blocked-by', 'related', 'question', 'clear-questions', 'slug']
+const UPDATE_FLAGS = ['title', 'track', 'priority', 'roi', 'status', 'blocked-by', 'related', 'modules', 'question', 'clear-questions', 'slug']
 
 // Rewrite a card's frontmatter. Also the sanctioned way to move a card between tracks
 // (--track moves the file + fixes the index) or rename it (--slug). Body is untouched.
@@ -698,6 +747,10 @@ function cmdUpdate(args) {
   if (flags.related !== undefined) {
     meta.related = parseIdList(flags.related, 'related', ceiling)
     changes.push('related')
+  }
+  if (flags.modules !== undefined) {
+    meta.modules = validModules(parseModuleList(flags.modules))
+    changes.push('modules')
   }
   if (flags['clear-questions']) {
     meta.questions = []
@@ -1053,8 +1106,9 @@ Usage: node ${rel(SELF)} <command> [args]
   create --title T --track K [opts]
                        scaffold ONE card: write its frontmatter + a body template, index it.
                        opts: --priority high|med|low (default med), --roi high|med|low
-                       (default med), --blocked-by 1,2, --related 3, --question "..."
-                       (repeatable), --slug my-slug, --no-body.
+                       (default med), --blocked-by 1,2, --related 3, --modules skill,site
+                       (validated against modules.md), --question "..." (repeatable),
+                       --slug my-slug, --no-body.
                        The script owns the frontmatter — fill only the body by hand.
   update <id> [opts]   rewrite a card's frontmatter (same opts as create, plus
                        --status todo|ready|implementing and --clear-questions).

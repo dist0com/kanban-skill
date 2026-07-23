@@ -6,6 +6,7 @@ roi: med
 status: todo
 blocked_by: []
 related: [5]
+modules: []
 questions:
   - Translate only the landing page, or also the comparison pages (vs-github-issues, vs-hermes-kanban) and the recipes pages?
   - When the English copy changes, how do the four translations stay in sync — a manual pass, or an agent/pre-deploy check that flags stale pages?

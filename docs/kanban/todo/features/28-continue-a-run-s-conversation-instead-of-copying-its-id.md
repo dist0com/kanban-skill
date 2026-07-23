@@ -6,6 +6,7 @@ roi: med
 status: todo
 blocked_by: []
 related: []
+modules: []
 questions:
   - Does resume cross the 'no human-in-the-loop reply channel' line in rejected.md? That rejection was about replying mid-run; resume continues a finished run as a new run. Confirm this boundary is OK before building.
   - How much conversation UI do we build? Full Claude Code-style chat is high effort. An MVP could be one prompt box on a finished run that starts a new run with --resume, reusing the existing log view. Decide MVP vs full chat first.

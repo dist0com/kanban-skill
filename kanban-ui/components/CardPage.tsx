@@ -26,7 +26,7 @@ import {
   RunningBadge,
   SessionLog,
 } from "./agent-shared";
-import { LevelSelect, StatusPill, TodoProgress, TrackChip } from "./chips";
+import { LevelSelect, ModuleChip, StatusPill, TodoProgress, TrackChip } from "./chips";
 import { Markdown } from "./Markdown";
 import { latestSessionForCard, runningCardIds, runningSessionForCard, type StartedSession, useAgentSessions, useSessionLog } from "./sessions";
 
@@ -238,6 +238,16 @@ export function CardPage({
           <MetaItem label="Track">
             <TrackChip track={card.track} />
           </MetaItem>
+
+          {card.modules.length > 0 && (
+            <MetaItem label="Modules">
+              <span className="flex flex-wrap items-center gap-1.5">
+                {card.modules.map((m) => (
+                  <ModuleChip key={m} module={m} />
+                ))}
+              </span>
+            </MetaItem>
+          )}
 
           <MetaItem label="Priority">
             <LevelSelect value={card.priority} disabled={busy} onChange={(v) => patchCard(card.id, { priority: v })} />

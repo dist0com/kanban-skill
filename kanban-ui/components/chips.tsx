@@ -1,6 +1,6 @@
 "use client";
 
-import { FiCheckCircle, FiChevronDown, FiFlag, FiLayers, FiPlayCircle } from "react-icons/fi";
+import { FiBox, FiCheckCircle, FiChevronDown, FiFlag, FiLayers, FiPlayCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import type { CardStatus } from "@/lib/types";
 
@@ -165,6 +165,22 @@ export function TrackChip({ track }: { track: string }) {
       }}
     >
       {track}
+    </span>
+  );
+}
+
+// Module — what part of the product the card touches (from modules.md). Its own
+// mint colour and a box icon keep it from reading as a second TrackChip (lilac):
+// the track is the kind of effort, the module is the part it lands in. One chip
+// per module — a card can name two. Read-only; the CLI writes the field.
+export function ModuleChip({ module }: { module: string }) {
+  return (
+    <span
+      className="nb-chip"
+      style={{ background: "var(--color-nb-mint-soft)", color: "var(--color-nb-mint-ink)" }}
+    >
+      <FiBox aria-hidden style={{ width: 11, height: 11, flex: "0 0 auto" }} />
+      {module}
     </span>
   );
 }

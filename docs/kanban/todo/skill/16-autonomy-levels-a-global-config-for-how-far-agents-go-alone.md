@@ -5,6 +5,7 @@ priority: low
 roi: med
 blocked_by: []
 related: [6]
+modules: []
 questions:
   - Are we ready to ship any autonomy level now, or park this until we've run more supervised loops? We still lack experience with agents deciding alone.
   - Where should the autonomy config live — the skill's config.md, or docs/kanban/ so the local UI can read and toggle it?

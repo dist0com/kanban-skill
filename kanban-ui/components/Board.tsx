@@ -7,7 +7,7 @@ import { getBoard } from "@/app/actions";
 import type { AgentInfo, Board } from "@/lib/types";
 import { Header } from "./Header";
 import { RUNNING_VERB, RunningBadge, SessionLogOverlay } from "./agent-shared";
-import { GroupChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
+import { GroupChip, ModuleChip, PriorityChip, RoiTag, StatusPill, TodoProgress } from "./chips";
 import { runningSessionForCard, useAgentSessions, useSessionLog } from "./sessions";
 
 export function BoardView({
@@ -142,6 +142,9 @@ export function BoardView({
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <PriorityChip value={card.priority} />
                       <RoiTag value={card.roi} />
+                      {card.modules.map((m) => (
+                        <ModuleChip key={m} module={m} />
+                      ))}
                     </div>
                   </Link>
                   );

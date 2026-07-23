@@ -6,6 +6,7 @@ roi: high
 status: todo
 blocked_by: []
 related: []
+modules: []
 questions:
   - "Sequence the --modules script work vs. #34: make #38 blocked_by #34 (land #34's flag first, mirrors #39 — recommended), or absorb #34's --modules work into #38 to ship together? Priorities call for the user."
 ---

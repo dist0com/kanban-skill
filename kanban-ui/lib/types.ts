@@ -18,6 +18,10 @@ export interface CardMeta {
   blocked_by: number[];
   related: number[];
   questions: string[];
+  /** The parts of the product this card touches (module names from
+   *  docs/kanban/modules.md). A card with no field, or an empty list, touches
+   *  none. Read-only in the UI — the CLI writes it. */
+  modules: string[];
 }
 
 /** A pointer to another card — just enough to show a link. */

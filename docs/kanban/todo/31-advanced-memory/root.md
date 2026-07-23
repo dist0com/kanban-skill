@@ -6,6 +6,7 @@ roi: high
 status: todo
 blocked_by: []
 related: []
+modules: []
 questions: []
 ---
 
@@ -53,7 +54,7 @@ what the memory should hold.
 ## Todo
 - [ ] Explore what the memory layer should hold #32
 - [x] Map the project's modules at setup #33
-- [ ] Tag each task with the modules it touches #34
+- [x] Tag each task with the modules it touches #34
 - [x] Give each module its own memory path #35
 - [x] Fill each module's memory with a fixed set of files #36
 - [x] Stop maintaining `archive.md`: point the finish and prune flows at the published

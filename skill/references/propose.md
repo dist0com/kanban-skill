@@ -21,6 +21,10 @@ shipped, read the module's **published docs** — shipped behavior is recorded t
 memory. A module with no folder yet has no notes. With no focus module or no module map,
 read the umbrella set at `docs/kanban/` instead.
 
+**List the cards already tagged with the focus module.** Grep the board for cards whose
+`modules:` field names it — `grep -rl 'modules:.*<module>' docs/kanban/todo/` — and read
+them, so you don't re-propose planned work and you see where the module already has effort.
+
 ## 2. Walk it as a user
 
 Ideas come from a walkthrough, not a feature list. Play one real user story in the

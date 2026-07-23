@@ -30,6 +30,7 @@ export function serializeFrontmatter(m: CardMeta): string {
   out.push(`status: ${STATUSES.includes(m.status) ? m.status : "todo"}`);
   out.push(`blocked_by: [${(m.blocked_by || []).join(", ")}]`);
   out.push(`related: [${(m.related || []).join(", ")}]`);
+  out.push(`modules: [${(m.modules || []).join(", ")}]`);
   if (!m.questions || m.questions.length === 0) out.push("questions: []");
   else {
     out.push("questions:");
@@ -106,6 +107,13 @@ export function parseFrontmatter(text: string): ParsedCard {
   if (!Array.isArray(meta.questions)) {
     meta.questions = meta.questions ? [meta.questions] : [];
   }
+  // A missing field, or a value that isn't a list, reads as no modules — the
+  // same as a card that touches none. Names are kept as-is (never numeric).
+  if (Array.isArray(meta.modules)) {
+    meta.modules = meta.modules.map((x) => String(x)).filter(Boolean);
+  } else {
+    meta.modules = [];
+  }
 
   const rawStatus = String(meta.status ?? "todo") as CardStatus;
   const normalized: CardMeta = {
@@ -119,6 +127,7 @@ export function parseFrontmatter(text: string): ParsedCard {
     blocked_by: (meta.blocked_by as number[]) ?? [],
     related: (meta.related as number[]) ?? [],
     questions: (meta.questions as string[]) ?? [],
+    modules: (meta.modules as string[]) ?? [],
   };
   return { meta: normalized, body: lines.slice(i + 1).join("\n") };
 }
