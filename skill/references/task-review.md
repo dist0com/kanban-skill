@@ -20,8 +20,10 @@ review each for the following criteria:
    it doesn't need to have code-level details. but the requirements should be clear.
 9. propose tasks if you notice things not covered in our existing todos or relevant tasks.
    ask me questions if you can't decide whether the proposed tasks should be included.
-10. check if the task is not already done by the shipped product. read the code to
-    confirm the capability doesn't already exist before keeping the task. if it's
+10. check if the task is not already done by the shipped product. confirm before
+    keeping the task: a code change → search the codebase; a doc / content change →
+    search where that content lives (your reference docs in the skill's Configuration);
+    a research task → check where past research is written up. if it's
     already covered, reject it.
     - example: a card "end every page with a clear next step" when a shared footer already
       renders that next step on every page — the card would duplicate what ships. rejected.

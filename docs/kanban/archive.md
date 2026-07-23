@@ -60,6 +60,9 @@ you don't re-suggest something already done.
   "refine #4" or press the Refine button (it used to be Nudge).
 - Each board column now shows the best card to start next at the top: ready cards first,
   then ones in flight, then the rest by priority and ROI — instead of oldest-id-first.
+- A card page now shows only the buttons that fit its state, so you are never offered an
+  action that makes no sense there — Refine hides once the plan is concrete, Archive takes
+  over when every todo is checked, and Resolve replaces Refine while questions are open.
 
 ## Distribution
 

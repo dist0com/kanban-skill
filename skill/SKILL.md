@@ -91,20 +91,20 @@ planned yet. Full guide in `references/propose.md`.
 
 ## Add a task
 
-Review before writing, then again after. Both passes use `references/task-review.md`;
-on a fail, ask the user a question about what it flagged, then decide from the answer
+Add a task from an idea.
+Review the idea before writing, then review again after. Both passes use `references/task-review.md`.
+On a failure, ask the user a question about what it flagged, then decide from the answer
 whether to proceed or drop it. Never drop a task without asking a question first.
 
 1. **Review the idea first** — business necessity, feasibility, feature value,
    duplication. Read `docs/kanban/redesign.md` and drop or fix any design it warns
    against. Only proceed if it passes (or the user's answer says to).
 2. **Scaffold the card, then write its body.** Create the card and its frontmatter with
-   `create --title "..." --track <track>` (add `--priority`, `--roi`, `--blocked-by`,
-   `--related`, `--question` as needed) — this writes the file, its meta, and the README
-   entry. Then spawn a subagent with `references/add-task.md` and the file path; it fills in
-   only the **body** (summary, scope, todos) with Write/Edit and leaves the frontmatter
-   alone. Adding three tasks? Run `create` three times (each returns its id) and spawn three
-   subagents in parallel.
+   `create --title "..." --track <track>` plus any meta flags (see "The script") — this
+   writes the file, its meta, and the README entry. Then spawn a subagent with
+   `references/add-task.md` and the file path; it fills in only the **body** (summary,
+   scope, todos) with Write/Edit and leaves the frontmatter alone. Adding three tasks?
+   Run `create` three times (each returns its id) and spawn three subagents in parallel.
 3. **Review the written card** — plain language, todos split, unambiguous plan. Keep it
    if it passes.
 
@@ -147,8 +147,8 @@ todo/<id>-<short-slug>/
 
 The root takes one new id; each subtask takes its own id — allocate them together with
 `node .claude/skills/kanban/kanban.mjs create --count <N>` (root + subtasks). Wire them up
-under "Relationships": each subtask is **Related** to the root, and **Blocked by** between
-subtasks that must run in order. Full spec in `references/add-task.md`.
+with the script's flags: each subtask is **Related** to the root, and **Blocked by**
+between subtasks that must run in order.
 
 ## Finish a task
 

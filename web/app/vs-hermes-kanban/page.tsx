@@ -16,10 +16,10 @@ export const metadata: Metadata = {
   title: "Kanban skill vs. Hermes Agent Kanban — a lean file-based board vs. a durable runtime",
   description:
     "How the file-based kanban skill compares to Nous Research's Hermes Agent Kanban: two overlapping agent kanban boards — plain diffable files that run on any agent (even Hermes) vs. a durable, shared SQLite queue many named agents claim tasks from.",
-  alternates: { canonical: "/vs-hermes-kanban/" },
+  alternates: { canonical: "/vs-hermes-kanban" },
   openGraph: {
     type: "article",
-    url: "/vs-hermes-kanban/",
+    url: "/vs-hermes-kanban",
     siteName: "Kanban skill",
     title: "Kanban skill vs. Hermes Agent Kanban",
     description:
@@ -41,7 +41,7 @@ const jsonLd = {
   headline: "Kanban skill vs. Hermes Agent Kanban",
   description:
     "How the file-based kanban skill compares to Hermes Agent Kanban: two overlapping agent kanban boards — plain diffable files that run on any agent (even Hermes) vs. a durable, shared SQLite queue many named agents claim tasks from.",
-  url: `${BASE_URL}/vs-hermes-kanban/`,
+  url: `${BASE_URL}/vs-hermes-kanban`,
 };
 
 export default function VsHermesPage() {

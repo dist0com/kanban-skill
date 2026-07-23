@@ -57,8 +57,8 @@ The review's outcome is two lists:
    every box already matches reality, leave the list as is.
 4. **Split off side ideas.** An idea that came up during the refine but isn't needed
    for the goal (the goal-fit test — on-topic doesn't count) becomes its own card
-   (follow `references/add-task.md`, including its rule against near-duplicate
-   splits), not a bullet buried in this one.
+   (follow "Add a task" in `SKILL.md`, minding `references/add-task.md`'s rule
+   against near-duplicate splits), not a bullet buried in this one.
 5. **Write the result back into the card body**, in the plain, short language
    `references/add-task.md` uses — a reader should get each line at a glance.
 
@@ -90,5 +90,5 @@ After you rewrite the root, bring its subtasks in line with the new plan:
 - Re-read each subtask card. Refine the ones the change touched so their scope, order,
   and blocked-by links still match the root.
 - Drop a subtask the plan no longer needs (reject it); add a card for a new piece it
-  now needs (`references/add-task.md`).
+  now needs (the "Add a task" flow in `SKILL.md`).
 - Keep the root's subtask list and the real subtask cards in sync.

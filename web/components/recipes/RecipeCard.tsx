@@ -9,7 +9,7 @@ import { panel } from "../styles";
 export function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <a
-      href={`/recipes/${recipe.slug}/`}
+      href={`/recipes/${recipe.slug}`}
       className={`${panel} group flex h-full flex-col p-6 no-underline`}
     >
       <div className="flex items-center gap-4">

@@ -31,7 +31,7 @@ export function RecipeLanding({
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="mt-10">
         <a
-          href="/recipes/"
+          href="/recipes"
           className="inline-flex items-center gap-1 text-sm text-muted no-underline transition-colors hover:text-ink"
         >
           ← All recipes

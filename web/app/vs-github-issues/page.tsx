@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   title: "Kanban skill vs. GitHub Issues — a different tool for a different job",
   description:
     "How the file-based kanban skill compares to GitHub Issues: local Markdown vs. a remote API, token cost, agent ergonomics, teams, and when to use each.",
-  alternates: { canonical: "/vs-github-issues/" },
+  alternates: { canonical: "/vs-github-issues" },
   openGraph: {
     type: "article",
-    url: "/vs-github-issues/",
+    url: "/vs-github-issues",
     siteName: "Kanban skill",
     title: "Kanban skill vs. GitHub Issues",
     description:
@@ -38,7 +38,7 @@ const jsonLd = {
   headline: "Kanban skill vs. GitHub Issues",
   description:
     "How the file-based kanban skill compares to GitHub Issues across storage, token cost, agent ergonomics, teams, and transparency.",
-  url: `${BASE_URL}/vs-github-issues/`,
+  url: `${BASE_URL}/vs-github-issues`,
 };
 
 export default function VsPage() {

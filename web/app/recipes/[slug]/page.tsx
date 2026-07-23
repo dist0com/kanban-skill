@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const recipe = getRecipe(slug);
   if (!recipe) return {};
 
-  const url = `/recipes/${recipe.slug}/`;
+  const url = `/recipes/${recipe.slug}`;
   return {
     title: `${recipe.title} — a kanban recipe`,
     description: recipe.tagline,
@@ -61,7 +61,7 @@ export default async function RecipePage({ params }: Params) {
     "@type": "HowTo",
     name: recipe.title,
     description: recipe.summary,
-    url: `${BASE_URL}/recipes/${recipe.slug}/`,
+    url: `${BASE_URL}/recipes/${recipe.slug}`,
     step: recipe.does.map((s, i) => ({
       "@type": "HowToStep",
       position: i + 1,

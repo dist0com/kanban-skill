@@ -4,8 +4,8 @@ import { GITHUB_URL } from "./content";
 // The comparison pages this dropdown lists. "vs GitHub Issues" is the first;
 // more land here later — add a row and the menu grows.
 const comparisons: { href: string; title: string }[] = [
-  { href: "/vs-github-issues/", title: "vs GitHub Issues" },
-  { href: "/vs-hermes-kanban/", title: "vs Hermes Agent Kanban" },
+  { href: "/vs-github-issues", title: "vs GitHub Issues" },
+  { href: "/vs-hermes-kanban", title: "vs Hermes Agent Kanban" },
 ];
 
 function CompareMenu() {
@@ -53,7 +53,7 @@ export function Header() {
         <a href="/#deeper" className="transition-colors hover:text-ink">
           Features
         </a>
-        <a href="/recipes/" className="transition-colors hover:text-ink">
+        <a href="/recipes" className="transition-colors hover:text-ink">
           Recipes
         </a>
         <CompareMenu />

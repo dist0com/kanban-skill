@@ -1,38 +1,20 @@
-# Add a task
+# Write a card's body
 
-1. Read the board so you don't duplicate an existing card. Read
-   `docs/kanban/redesign.md` and follow the design it tells you to use for this area —
-   don't repeat a mistake it warns against.
-2. Confirm it isn't already done:
-   - a code change → search the codebase.
-   - a doc / content change → search where that content lives (your reference docs in
-     the skill's Configuration).
-   - a research task → check where past research is written up.
-3. Scaffold the card with the script — it writes the frontmatter, a body template, and the
-   README entry:
+The script has already scaffolded the card you were given — its frontmatter, a body
+template, and its README entry exist. Your job is the **body** only: the summary line,
+`## Scope`, and `## Todo`. Replace the template placeholders with Write/Edit.
 
-   ```
-   node .claude/skills/kanban/kanban.mjs create --title "..." --track <track> \
-        [--priority high|med|low] [--roi high|med|low] [--blocked-by 1,2] [--related 3] \
-        [--question "..."]
-   ```
+**Never touch the frontmatter.** The script owns it — a wrong meta field is fixed with
+`create`/`update` (see "The script" in `SKILL.md`), not with an editor.
 
-   It prints the id and the file path. For a broad task, use a folder instead (see "Broad
-   tasks: root + subtasks").
-4. Before writing, scan the board for tasks this one depends on or sits next to (see
-   "Relationships"). If you didn't set them at create time, set them with
-   `update <id> --blocked-by ... --related ...` — never hand-edit the frontmatter.
-5. Write the **body** only (see "Card shape") — the summary line, `## Scope`, `## Todo`.
-   Replace the template placeholders with Write/Edit. Leave the frontmatter to the script.
-6. Fill in the todos (see "Break a task into todos").
-7. The README entry and `next-id` are already handled by `create`. If a meta field is
-   wrong, fix it with `update <id> --<field> ...`, not by editing the file.
+Before writing, read `docs/kanban/redesign.md` and follow the design it tells you to
+use for this area — don't repeat a mistake it warns against.
 
 ## Card shape
 
-A rough shape, not a strict form. Keep lines short and plain. The YAML frontmatter is
-written by `create`/`update` (don't hand-edit it); you write the body — the summary,
-scope, and todos. Add any section that helps; drop any that doesn't.
+A rough shape, not a strict form. Keep lines short and plain — a non-native reader
+skimming should get each line in one pass. Add any section that helps; drop any that
+doesn't.
 
 ```
 ---
@@ -56,9 +38,8 @@ questions: []              # questions a human must decide; [] for none
 ```
 
 - **title** lives in the frontmatter — one source of truth, so no `#` H1 in the body.
-- **blocked_by / related** are lists of ids (`[]` when none).
-- **questions** — questions the board still needs a human to answer. A Review step
-  writes them; clear them back to `[]` once answered. Empty for a normal new card.
+- **blocked_by / related / questions** are set through the script's flags (see
+  "Relationships"); they belong to whoever runs `create`/`update`, not to the body.
 
 **Todo** — split the scope into steps you can check off, in the order you'd do them.
 Each one is a single line.
@@ -71,11 +52,12 @@ This isn't a full plan, just enough to start.
 
 ## Don't split off near-duplicates
 
-Before adding a card, check it against the task it builds on. If the new card is mostly
-a tweak, reframe, or extra detail on an upstream card that **isn't built yet**, don't
-make a new card — update the upstream card instead. A card earns its own id only when
-it's genuinely separate work (a different file, system, or deliverable), not a minor
-modification layered on top of another open task.
+For whoever decides a card should exist, not the body writer. Before adding a card,
+check it against the task it builds on. If the new card is mostly a tweak, reframe, or
+extra detail on an upstream card that **isn't built yet**, don't make a new card —
+update the upstream card instead. A card earns its own id only when it's genuinely
+separate work (a different file, system, or deliverable), not a minor modification
+layered on top of another open task.
 
 ## Document a change
 
@@ -84,7 +66,8 @@ touches, so the change isn't hidden after it ships. Follow `references/document-
 
 ## Relationships
 
-Tasks connect to each other. Every card lists two kinds of connected tasks, by `#<id>`:
+Tasks connect to each other. Every card lists two kinds of connected tasks in its
+frontmatter, by id — set with `create`/`update`'s `--blocked-by` and `--related` flags:
 
 - **Blocked by** — tasks that must finish first. This one can't start, or can't be done
   right, until they're done. A card with an open blocker isn't ready to pick; say what

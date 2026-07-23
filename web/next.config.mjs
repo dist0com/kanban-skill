@@ -4,8 +4,8 @@ const nextConfig = {
   output: 'export',
   // Static export can't use the default Image Optimization server.
   images: { unoptimized: true },
-  // Emit `/path/index.html` so clean URLs work on static hosts.
-  trailingSlash: true,
+  // Emit `/path.html` so clean slash-free URLs work on static hosts.
+  trailingSlash: false,
 };
 
 export default nextConfig;

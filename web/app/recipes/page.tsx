@@ -10,10 +10,10 @@ export const metadata: Metadata = {
   title: "Recipes — ready-made recurring tasks for your kanban board",
   description:
     "Ready-made recurring tasks you add to your board in one prompt. Claude pulls the recipe by URL and runs it on the cadence you choose — starting with daily kanban maintenance.",
-  alternates: { canonical: "/recipes/" },
+  alternates: { canonical: "/recipes" },
   openGraph: {
     type: "website",
-    url: "/recipes/",
+    url: "/recipes",
     siteName: "Kanban skill",
     title: "Recipes — ready-made recurring tasks for your kanban board",
     description:
@@ -35,7 +35,7 @@ const jsonLd = {
   name: "Kanban skill recipes",
   description:
     "Ready-made recurring tasks you add to your kanban board in one prompt.",
-  url: `${BASE_URL}/recipes/`,
+  url: `${BASE_URL}/recipes`,
 };
 
 export default function RecipesPage() {

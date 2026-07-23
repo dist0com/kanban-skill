@@ -16,7 +16,6 @@ _(none)_
 - [#26 A ready-only focus toggle for the board](features/26-a-ready-only-focus-toggle-for-the-board.md)
 - [#27 Auto-refresh every open view when a background run finishes](features/27-auto-refresh-every-open-view-when-a-background-run-finishes.md)
 - [#28 Continue a run's conversation instead of copying its id](features/28-continue-a-run-s-conversation-instead-of-copying-its-id.md)
-- [#29 Show only the control buttons that fit the card's state](features/29-show-only-the-control-buttons-that-fit-the-card-s-state.md)
 
 ## skill
 
@@ -24,7 +23,8 @@ _(none)_
 - [#16 Autonomy levels: a global config for how far agents go alone](skill/16-autonomy-levels-a-global-config-for-how-far-agents-go-alone.md)
 - [#31 Advanced memory: a structured memory layer for planning](31-advanced-memory/root.md)
   - [#32 Explore what the memory layer should hold](31-advanced-memory/skill/32-explore-what-the-memory-layer-should-hold.md)
-  - [#33 Map the project's modules at setup and keep the map fresh](31-advanced-memory/skill/33-map-project-modules-at-setup-and-keep-the-map-fresh.md)
+  - [#33 Map the project's modules at setup](31-advanced-memory/skill/33-map-the-projects-modules-at-setup.md)
+  - [#34 Tag each task with the modules it touches](31-advanced-memory/skill/34-tag-each-task-with-the-modules-it-touches.md)
 
 ## docs
 

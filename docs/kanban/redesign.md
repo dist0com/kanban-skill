@@ -23,6 +23,12 @@ mistake, then the design we actually want. Read before writing or reviewing a ca
   one run, but there's ONE global runs panel in the header (an archive icon) to browse all
   runs — live and past, every action and card — showing each run's input + log. Keep 30.
 
+## Project memory
+
+- ❌ **Assume one top-level folder is one module** → ✅ a module can span several folders
+  and two modules can share one, so no code maps a file path back to a module. Only the
+  module's name is machine-read; where it lives is prose, a reference for the reader.
+
 ## Card format
 
 - ❌ **Meta in bold lines under the title** (`**Track:** ... **Priority:** ...`) → ✅ a

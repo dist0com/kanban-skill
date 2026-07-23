@@ -40,8 +40,8 @@ Record the stumbles you find, and the new watermark, in `memory.md` (below).
 ## 3. Propose 3 tasks in the focus
 
 All three inside the focus. Not on the board, not in `archive.md`, not in
-`rejected.md`. Unsure one is already done? Confirm first (`references/add-task.md`,
-step 2). Then write each with the "Add a task" flow in `SKILL.md`.
+`rejected.md`. Unsure one is already done? Confirm first (the already-done check in
+`references/task-review.md`). Then write each with the "Add a task" flow in `SKILL.md`.
 
 ## Memory
 
